@@ -4,6 +4,7 @@ import com.eventify.eventify.model.Venue;
 import com.eventify.eventify.service.VenueService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,7 +24,7 @@ public class VenueController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Registrar un nuevo lugar", description = "Valida y almacena un lugar en memoria")
-    public Venue create(@RequestBody Venue venue) {
+    public Venue create(@Valid @RequestBody Venue venue) {
         return venueService.save(venue);
     }
 

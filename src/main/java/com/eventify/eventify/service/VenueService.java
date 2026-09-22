@@ -20,6 +20,15 @@ public class VenueService {
         if(venue.getNombre() == null || venue.getNombre().trim().isEmpty()){
             throw new InvalidDataException("El nombre del lugar no puede estar vacío");
         }
+        if(venue.getDireccion() == null || venue.getDireccion().trim().isEmpty()){
+            throw new InvalidDataException("La dirección no puede estar vacía");
+        }
+        if(venue.getCapacidad() == null){
+            throw new InvalidDataException("La capacidad es obligatoria");
+        }
+        if(venue.getCapacidad() <= 0){
+            throw new InvalidDataException("La capacidad debe ser mayor que cero");
+        }
         return venueRepository.save(venue);
     }
 

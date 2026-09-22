@@ -4,6 +4,7 @@ import com.eventify.eventify.model.Event;
 import com.eventify.eventify.service.EventService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,7 +24,7 @@ public class EventController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Registrar un nuevo evento",description = "Valida y almacena un evento menor")
-    public Event create(@RequestBody Event event){
+    public Event create(@Valid @RequestBody Event event){
         return eventService.save(event);
     }
 

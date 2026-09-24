@@ -1,6 +1,23 @@
 spring:
   application:
     name: eventify
+
+  datasource:
+    url: jdbc:h2:file:./data/eventify
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
 app:
   seeder:
-    enabled: true
+    enabled: false

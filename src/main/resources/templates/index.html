@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eventify</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        dialog::backdrop {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        dialog {
+            border: none;
+            padding: 0;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+
+<header class="bg-blue-950 text-white">
+    <div class="max-w-6xl mx-auto px-6 py-10">
+        <div class="flex items-center justify-between flex-wrap gap-4">
+            <div>
+                <h1 class="text-3xl font-bold tracking-tight">Eventify</h1>
+                <p class="mt-2 text-blue-200">Catálogo de eventos y lugares disponibles.</p>
+            </div>
+            <nav class="flex gap-3">
+                <a th:href="@{/admin/eventos}"
+                   class="px-4 py-2 rounded-2xl bg-blue-900 text-blue-100 text-sm font-medium hover:bg-blue-800 transition-all duration-300">
+                    Panel de eventos
+                </a>
+                <a th:href="@{/admin/venues}"
+                   class="px-4 py-2 rounded-2xl bg-blue-900 text-blue-100 text-sm font-medium hover:bg-blue-800 transition-all duration-300">
+                    Panel de lugares
+                </a>
+            </nav>
+        </div>
+    </div>
+</header>
+
+<!-- ============ EVENTOS ============ -->
+<section class="max-w-6xl mx-auto px-6 py-12">
+    <div class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-semibold">Eventos próximos</h2>
+        <button type="button" onclick="dialogEvento.showModal()"
+                class="px-5 py-2.5 rounded-2xl bg-blue-950 text-white font-medium shadow-sm hover:bg-blue-900 transition-all duration-300">
+            + Agregar evento
+        </button>
+    </div>
+
+    <div th:if="${eventos.isEmpty()}" class="text-slate-500">
+        Actualmente no hay eventos programados.
+    </div>
+
+    <div th:unless="${eventos.isEmpty()}" class="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <table class="w-full text-left">
+            <thead class="bg-blue-950 text-blue-100 text-sm uppercase tracking-wide">
+            <tr>
+                <th class="px-6 py-3">Nombre</th>
+                <th class="px-6 py-3">Fecha</th>
+                <th class="px-6 py-3">Descripción</th>
+                <th class="px-6 py-3">Acciones</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="evento : ${eventos}"
+                class="border-t border-slate-100 hover:bg-blue-50 transition-all duration-300">
+                <td class="px-6 py-4 font-medium" th:text="${evento.nombre}"></td>
+                <td class="px-6 py-4 text-slate-500" th:text="${evento.fecha}"></td>
+                <td class="px-6 py-4 text-slate-500" th:text="${evento.descripcion}"></td>
+                <td class="px-6 py-4">
+                    <div class="flex gap-2">
+                        <button type="button" th:onclick="|dialogEditarEvento${evento.id}.showModal()|"
+                                class="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 text-sm font-medium hover:bg-slate-200 transition-all duration-300">
+                            Editar
+                        </button>
+                        <form th:action="@{/admin/eventos/{id}/eliminar(id=${evento.id})}" method="post"
+                              onsubmit="return confirm('¿Seguro que deseas eliminar este evento?')">
+                            <button type="submit"
+                                    class="px-3 py-1.5 rounded-xl bg-red-50 text-red-600 text-sm font-medium hover:bg-red-100 transition-all duration-300">
+                                Eliminar
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Popups de edición, uno por cada evento -->
+    <dialog th:each="evento : ${eventos}" th:id="|dialogEditarEvento${evento.id}|"
+            class="rounded-2xl shadow-md w-full max-w-md">
+        <div class="p-8">
+            <h3 class="text-xl font-semibold mb-6">Editar evento</h3>
+            <form th:action="@{/admin/eventos/{id}(id=${evento.id})}" method="post" class="space-y-4">
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">Nombre</label>
+                    <input type="text" name="nombre" th:value="${evento.nombre}"
+                           class="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-950 transition-all duration-300" />
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">Fecha</label>
+                    <input type="date" name="fecha" th:value="${evento.fecha}"
+                           class="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-950 transition-all duration-300" />
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">Descripción</label>
+                    <textarea name="descripcion" th:text="${evento.descripcion}" rows="3"
+                              class="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-950 transition-all duration-300"></textarea>
+                </div>
+
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" th:onclick="|dialogEditarEvento${evento.id}.close()|"
+                            class="px-5 py-2.5 rounded-2xl bg-slate-100 text-slate-600 font-medium hover:bg-slate-200 transition-all duration-300">
+                        Cancelar
+                    </button>
+                    <button type="submit"
+                            class="px-5 py-2.5 rounded-2xl bg-blue-950 text-white font-medium shadow-sm hover:bg-blue-900 transition-all duration-300">
+                        Guardar cambios
+                    </button>
+                </div>
+            </form>
+        </div>
+    </dialog>
+    <div th:if="${eventos.totalPages > 1}" class="flex items-center justify-center gap-3 mt-6">
+        <a th:if="${eventos.hasPrevious()}"
+           th:href="@{/(pageEventos=${eventos.number - 1})}"
+           class="px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-600 text-sm font-medium hover:bg-slate-100 transition-all duration-300">
+            ← Anterior
+        </a>
+        <span class="px-4 py-2 text-sm text-slate-500">
+            Página <span th:text="${eventos.number + 1}"></span> de <span th:text="${eventos.totalPages}"></span>
+        </span>
+        <a th:if="${eventos.hasNext()}"
+           th:href="@{/(pageEventos=${eventos.number + 1})}"
+           class="px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-600 text-sm font-medium hover:bg-slate-100 transition-all duration-300">
+            Siguiente →
+        </a>
+    </div>
+</section>
+
+<!-- ============ LUGARES ============ -->
+<section class="max-w-6xl mx-auto px-6 py-12">
+    <div class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-semibold">Lugares populares</h2>
+        <button type="button" onclick="dialogLugar.showModal()"
+                class="px-5 py-2.5 rounded-2xl bg-blue-950 text-white font-medium shadow-sm hover:bg-blue-900 transition-all duration-300">
+            + Agregar lugar
+        </button>
+    </div>
+
+    <div th:if="${lugares.isEmpty()}" class="text-slate-500">
+        Actualmente no hay lugares registrados.
+    </div>
+
+    <div th:unless="${lugares.isEmpty()}" class="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <table class="w-full text-left">
+            <thead class="bg-blue-950 text-blue-100 text-sm uppercase tracking-wide">
+            <tr>
+                <th class="px-6 py-3">Nombre</th>
+                <th class="px-6 py-3">Dirección</th>
+                <th class="px-6 py-3">Capacidad</th>
+                <th class="px-6 py-3">Acciones</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="lugar : ${lugares}"
+                class="border-t border-slate-100 hover:bg-blue-50 transition-all duration-300">
+                <td class="px-6 py-4 font-medium" th:text="${lugar.nombre}"></td>
+                <td class="px-6 py-4 text-slate-500" th:text="${lugar.direccion}"></td>
+                <td class="px-6 py-4 text-slate-500" th:text="${lugar.capacidad}"></td>
+                <td class="px-6 py-4">
+                    <div class="flex gap-2">
+                        <button type="button" th:onclick="|dialogEditarLugar${lugar.id}.showModal()|"
+                                class="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 text-sm font-medium hover:bg-slate-200 transition-all duration-300">
+                            Editar
+                        </button>
+                        <form th:action="@{/admin/venues/{id}/eliminar(id=${lugar.id})}" method="post"
+                              onsubmit="return confirm('¿Seguro que deseas eliminar este lugar?')">
+                            <button type="submit"
+                                    class="px-3 py-1.5 rounded-xl bg-red-50 text-red-600 text-sm font-medium hover:bg-red-100 transition-all duration-300">
+                                Eliminar
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Popups de edición, uno por cada lugar -->
+    <dialog th:each="lugar : ${lugares}" th:id="|dialogEditarLugar${lugar.id}|"
+            class="rounded-2xl shadow-md w-full max-w-md">
+        <div class="p-8">
+            <h3 class="text-xl font-semibold mb-6">Editar lugar</h3>
+            <form th:action="@{/admin/venues/{id}(id=${lugar.id})}" method="post" class="space-y-4">
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">Nombre</label>
+                    <input type="text" name="nombre" th:value="${lugar.nombre}"
+                           class="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-950 transition-all duration-300" />
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">Dirección</label>
+                    <input type="text" name="direccion" th:value="${lugar.direccion}"
+                           class="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-950 transition-all duration-300" />
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">Capacidad</label>
+                    <input type="number" name="capacidad" th:value="${lugar.capacidad}"
+                           class="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-950 transition-all duration-300" />
+                </div>
+
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" th:onclick="|dialogEditarLugar${lugar.id}.close()|"
+                            class="px-5 py-2.5 rounded-2xl bg-slate-100 text-slate-600 font-medium hover:bg-slate-200 transition-all duration-300">
+                        Cancelar
+                    </button>
+                    <button type="submit"
+                            class="px-5 py-2.5 rounded-2xl bg-blue-950 text-white font-medium shadow-sm hover:bg-blue-900 transition-all duration-300">
+                        Guardar cambios
+                    </button>
+                </div>
+            </form>
+        </div>
+    </dialog>
+    <div th:if="${lugares.totalPages > 1}" class="flex items-center justify-center gap-3 mt-6">
+        <a th:if="${lugares.hasPrevious()}"
+           th:href="@{/(pageLugares=${lugares.number - 1})}"
+           class="px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-600 text-sm font-medium hover:bg-slate-100 transition-all duration-300">
+            ← Anterior
+        </a>
+        <span class="px-4 py-2 text-sm text-slate-500">
+            Página <span th:text="${lugares.number + 1}"></span> de <span th:text="${lugares.totalPages}"></span>
+        </span>
+        <a th:if="${lugares.hasNext()}"
+           th:href="@{/(pageLugares=${lugares.number + 1})}"
+           class="px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-600 text-sm font-medium hover:bg-slate-100 transition-all duration-300">
+            Siguiente →
+        </a>
+    </div>
+</section>
+
+<!-- ============ POPUP: CREAR EVENTO ============ -->
+<dialog id="dialogEvento" class="rounded-2xl shadow-md w-full max-w-md">
+    <div class="p-8">
+        <h3 class="text-xl font-semibold mb-6">Registrar nuevo evento</h3>
+        <form th:action="@{/admin/eventos}" th:object="${event}" method="post" class="space-y-4">
+
+            <div>
+                <label class="block text-sm font-medium text-slate-600 mb-1">Nombre</label>
+                <input type="text" th:field="*{nombre}"
+                       class="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-950 transition-all duration-300" />
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-slate-600 mb-1">Fecha</label>
+                <input type="date" th:field="*{fecha}"
+                       class="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-950 transition-all duration-300" />
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-slate-600 mb-1">Descripción</label>
+                <textarea th:field="*{descripcion}" rows="3"
+                          class="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-950 transition-all duration-300"></textarea>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-2">
+                <button type="button" onclick="dialogEvento.close()"
+                        class="px-5 py-2.5 rounded-2xl bg-slate-100 text-slate-600 font-medium hover:bg-slate-200 transition-all duration-300">
+                    Cancelar
+                </button>
+                <button type="submit"
+                        class="px-5 py-2.5 rounded-2xl bg-blue-950 text-white font-medium shadow-sm hover:bg-blue-900 transition-all duration-300">
+                    Guardar
+                </button>
+            </div>
+        </form>
+    </div>
+</dialog>
+
+<!-- ============ POPUP: CREAR LUGAR ============ -->
+<dialog id="dialogLugar" class="rounded-2xl shadow-md w-full max-w-md">
+    <div class="p-8">
+        <h3 class="text-xl font-semibold mb-6">Registrar nuevo lugar</h3>
+        <form th:action="@{/admin/venues}" th:object="${venue}" method="post" class="space-y-4">
+
+            <div>
+                <label class="block text-sm font-medium text-slate-600 mb-1">Nombre</label>
+                <input type="text" th:field="*{nombre}"
+                       class="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-950 transition-all duration-300" />
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-slate-600 mb-1">Dirección</label>
+                <input type="text" th:field="*{direccion}"
+                       class="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-950 transition-all duration-300" />
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-slate-600 mb-1">Capacidad</label>
+                <input type="number" th:field="*{capacidad}"
+                       class="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-950 transition-all duration-300" />
+            </div>
+
+            <div class="flex justify-end gap-3 pt-2">
+                <button type="button" onclick="dialogLugar.close()"
+                        class="px-5 py-2.5 rounded-2xl bg-slate-100 text-slate-600 font-medium hover:bg-slate-200 transition-all duration-300">
+                    Cancelar
+                </button>
+                <button type="submit"
+                        class="px-5 py-2.5 rounded-2xl bg-blue-950 text-white font-medium shadow-sm hover:bg-blue-900 transition-all duration-300">
+                    Guardar
+                </button>
+            </div>
+        </form>
+    </div>
+</dialog>
+
+</body>
+</html>

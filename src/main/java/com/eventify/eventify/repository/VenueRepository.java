@@ -12,6 +12,10 @@ import java.util.List;
 public interface VenueRepository extends JpaRepository<Venue, Long> {
     List<Venue> findByNombreContaining(String nombre);
 
+    boolean existsByNombreIgnoreCase(String nombre);
+
+    boolean existsByNombreIgnoreCaseAndIdNot(String nombre, Long id);
+
     /**
      * Cuenta TODOS los eventos del lugar, incluidos los inactivos (por eso es nativa:
      * así no aplica el filtro @SQLRestriction y se respeta la FK de los eventos borrados lógicamente).

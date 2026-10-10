@@ -18,30 +18,39 @@
     </h1>
 
     <form th:action="${venue.id == null} ? @{/admin/venues} : @{/admin/venues/{id}(id=${venue.id})}"
-          th:object="${venue}" method="post" class="space-y-4">
+          th:object="${venue}" method="post" class="space-y-4" novalidate>
+
+        <!-- En edición el id viaja oculto: el grupo OnUpdate lo exige -->
+        <input type="hidden" th:if="*{id != null}" th:field="*{id}"/>
+
+        <div th:replace="~{fragments/layout :: erroresGlobales}"></div>
 
         <div>
-            <label class="block text-sm font-medium text-slate-600 mb-1">Nombre</label>
-            <input type="text" th:field="*{nombre}"
+            <label for="nombre" class="block text-sm font-medium text-slate-600 mb-1">Nombre</label>
+            <input type="text" th:field="*{nombre}" th:errorclass="campo-invalido"
                    class="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-950 transition-all duration-300" />
+            <p th:if="${#fields.hasErrors('nombre')}" th:errors="*{nombre}" class="error-campo">Error</p>
         </div>
 
         <div>
-            <label class="block text-sm font-medium text-slate-600 mb-1">Dirección</label>
-            <input type="text" th:field="*{direccion}"
+            <label for="direccion" class="block text-sm font-medium text-slate-600 mb-1">Dirección</label>
+            <input type="text" th:field="*{direccion}" th:errorclass="campo-invalido"
                    class="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-950 transition-all duration-300" />
+            <p th:if="${#fields.hasErrors('direccion')}" th:errors="*{direccion}" class="error-campo">Error</p>
         </div>
 
         <div>
-            <label class="block text-sm font-medium text-slate-600 mb-1">Ciudad</label>
-            <input type="text" th:field="*{ciudad}" required
+            <label for="ciudad" class="block text-sm font-medium text-slate-600 mb-1">Ciudad</label>
+            <input type="text" th:field="*{ciudad}" th:errorclass="campo-invalido"
                    class="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-950 transition-all duration-300" />
+            <p th:if="${#fields.hasErrors('ciudad')}" th:errors="*{ciudad}" class="error-campo">Error</p>
         </div>
 
         <div>
-            <label class="block text-sm font-medium text-slate-600 mb-1">Capacidad</label>
-            <input type="number" th:field="*{capacidad}"
+            <label for="capacidad" class="block text-sm font-medium text-slate-600 mb-1">Capacidad</label>
+            <input type="number" th:field="*{capacidad}" th:errorclass="campo-invalido"
                    class="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-950 transition-all duration-300" />
+            <p th:if="${#fields.hasErrors('capacidad')}" th:errors="*{capacidad}" class="error-campo">Error</p>
         </div>
 
         <div class="flex justify-end gap-3 pt-2">

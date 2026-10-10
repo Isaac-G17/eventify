@@ -1,17 +1,23 @@
 package com.eventify.eventify.service;
 
+import com.eventify.eventify.dto.EventCreateDTO;
 import com.eventify.eventify.dto.EventFilter;
+import com.eventify.eventify.dto.EventResponseDTO;
 import com.eventify.eventify.dto.EventSummaryDTO;
-import com.eventify.eventify.exception.InvalidDataException;
+import com.eventify.eventify.exception.BusinessRuleViolationException;
 import com.eventify.eventify.exception.ResourceNotFoundException;
+import com.eventify.eventify.mapper.EventMapperImpl;
+import com.eventify.eventify.mapper.ReferenceMapper;
 import com.eventify.eventify.model.Category;
 import com.eventify.eventify.model.Event;
 import com.eventify.eventify.model.Venue;
+import com.eventify.eventify.repository.CategoryRepository;
 import com.eventify.eventify.repository.EventRepository;
+import com.eventify.eventify.repository.VenueRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageRequest;
@@ -20,13 +26,19 @@ import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.SliceImpl;
 
 import java.time.LocalDate;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+/**
+ * Lógica del servicio con el mapper real de MapStruct (EventMapperImpl + ReferenceMapper) y repositorios simulados.
+ * Las validaciones de formato (nombre vacío, fecha pasada...) están en EventCreateDTOValidationTest.
+ */
 @ExtendWith(MockitoExtension.class)
 class EventServiceTest {
 
@@ -34,100 +46,89 @@ class EventServiceTest {
     private EventRepository eventRepository;
 
     @Mock
-    private VenueService venueService;
+    private VenueRepository venueRepository;
 
     @Mock
-    private CategoryService categoryService;
+    private CategoryRepository categoryRepository;
 
-    @InjectMocks
     private EventService eventService;
 
-    private Event validEvent;
+    private EventCreateDTO validEvent;
 
     private Venue venue;
 
     @BeforeEach
     void setUp() {
-        validEvent = new Event(null, "Conferencia Java", LocalDate.now().plusMonths(1), "Charla técnica de backend");
+        eventService = new EventService(eventRepository, new EventMapperImpl(new ReferenceMapper(venueRepository, categoryRepository)));
         venue = new Venue(1L, "Auditorio Principal", "Calle 50 #20-10", "Bogotá", 300);
-        validEvent.setVenue(venue);
+        validEvent = eventDto(null, "Conferencia Java", LocalDate.now().plusMonths(1), "Charla técnica de backend", 1L);
     }
 
     @Test
-    void save_ValidEvent_ReturnsSavedEvent() {
+    void save_ValidEvent_ReturnsResponseWithResolvedNames() {
         // Arrange (Preparar)
-        Event savedMock = new Event(1L, "Conferencia Java", LocalDate.now().plusMonths(1), "Charla técnica de backend");
-        when(venueService.findById(1L)).thenReturn(venue);
-        when(eventRepository.save(validEvent)).thenReturn(savedMock);
+        when(venueRepository.findById(1L)).thenReturn(Optional.of(venue));
+        when(eventRepository.save(any(Event.class))).thenAnswer(inv -> {
+            Event e = inv.getArgument(0);
+            e.setId(1L);
+            return e;
+        });
 
         // Act (Actuar)
-        Event result = eventService.save(validEvent);
+        EventResponseDTO result = eventService.save(validEvent);
 
         // Assert (Verificar)
         assertNotNull(result);
-        assertEquals(1L, result.getId());
-        assertEquals("Conferencia Java", result.getNombre());
-        verify(eventRepository, times(1)).save(validEvent);
+        assertEquals(1L, result.id());
+        assertEquals("Conferencia Java", result.nombre());
+        assertEquals("Auditorio Principal", result.venueName());
+        assertEquals("Bogotá", result.venueCity());
+        verify(eventRepository, times(1)).save(any(Event.class));
     }
 
     @Test
-    void save_EmptyName_ThrowsInvalidDataException() {
-        // Arrange (Preparar)
-        Event invalidEvent = new Event(null, "   ", LocalDate.now().plusMonths(1), "Descripción");
+    void save_WithCategoryIds_ResolvesEntitiesAndReturnsSortedNames() {
+        // Escenario 6: venueId=1 y categoryIds=[1,3,5] -> entidades resueltas y nombres en la respuesta
+        Category conciertos = new Category(1L, "Conciertos", "Música en vivo");
+        Category conferencias = new Category(3L, "Conferencias", "Charlas");
+        Category gastronomia = new Category(5L, "Gastronomía", "Comida");
+        validEvent.setCategoryIds(new LinkedHashSet<>(List.of(1L, 3L, 5L)));
+        when(venueRepository.findById(1L)).thenReturn(Optional.of(venue));
+        when(categoryRepository.findAllById(Set.of(1L, 3L, 5L))).thenReturn(List.of(gastronomia, conciertos, conferencias));
+        ArgumentCaptor<Event> guardado = ArgumentCaptor.forClass(Event.class);
+        when(eventRepository.save(guardado.capture())).thenAnswer(inv -> inv.getArgument(0));
 
-        // Act & Assert (Actuar y Verificar)
-        assertThrows(InvalidDataException.class, () -> eventService.save(invalidEvent));
+        // Act
+        EventResponseDTO result = eventService.save(validEvent);
+
+        // Assert
+        assertSame(venue, guardado.getValue().getVenue());
+        assertEquals(Set.of(conciertos, conferencias, gastronomia), guardado.getValue().getCategorias());
+        assertTrue(guardado.getValue().getActivo());
+        assertEquals(List.of("Conciertos", "Conferencias", "Gastronomía"), result.categoryNames());
+    }
+
+    @Test
+    void save_NonExistingVenue_ThrowsResourceNotFoundException() {
+        // Arrange
+        when(venueRepository.findById(1L)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        ResourceNotFoundException ex = assertThrows(ResourceNotFoundException.class, () -> eventService.save(validEvent));
+        assertEquals("El lugar con ID 1 no existe", ex.getMessage());
         verify(eventRepository, never()).save(any());
     }
 
     @Test
-    void save_NullName_ThrowsInvalidDataException() {
-        // Arrange (Preparar)
-        Event invalidEvent = new Event(null, null, LocalDate.now().plusMonths(1), "Descripción");
+    void save_NonExistingCategory_ThrowsResourceNotFoundExceptionWithMissingIds() {
+        // Arrange
+        validEvent.setCategoryIds(Set.of(1L, 99L));
+        when(venueRepository.findById(1L)).thenReturn(Optional.of(venue));
+        when(categoryRepository.findAllById(Set.of(1L, 99L))).thenReturn(List.of(new Category(1L, "Conciertos", "Música")));
 
-        // Act & Assert (Actuar y Verificar)
-        assertThrows(InvalidDataException.class, () -> eventService.save(invalidEvent));
-        verify(eventRepository, never()).save(any());
-    }
-
-    @Test
-    void save_NullFecha_ThrowsInvalidDataException() {
-        // Arrange (Preparar)
-        Event invalidEvent = new Event(null, "Conferencia Java", null, "Descripción");
-
-        // Act & Assert (Actuar y Verificar)
-        assertThrows(InvalidDataException.class, () -> eventService.save(invalidEvent));
-        verify(eventRepository, never()).save(any());
-    }
-
-    @Test
-    void save_PastFecha_ThrowsInvalidDataException() {
-        // Arrange (Preparar)
-        Event invalidEvent = new Event(null, "Conferencia Java", LocalDate.of(2020, 1, 1), "Descripción");
-
-        // Act & Assert (Actuar y Verificar)
-        assertThrows(InvalidDataException.class, () -> eventService.save(invalidEvent));
-        verify(eventRepository, never()).save(any());
-    }
-
-    @Test
-    void save_EmptyDescripcion_ThrowsInvalidDataException() {
-        // Arrange (Preparar)
-        Event invalidEvent = new Event(null, "Conferencia Java", LocalDate.now().plusMonths(1), "   ");
-
-        // Act & Assert (Actuar y Verificar)
-        assertThrows(InvalidDataException.class, () -> eventService.save(invalidEvent));
-        verify(eventRepository, never()).save(any());
-    }
-
-    @Test
-    void save_DescripcionTooLong_ThrowsInvalidDataException() {
-        // Arrange (Preparar)
-        String descripcionLarga = "a".repeat(501);
-        Event invalidEvent = new Event(null, "Conferencia Java", LocalDate.now().plusMonths(1), descripcionLarga);
-
-        // Act & Assert (Actuar y Verificar)
-        assertThrows(InvalidDataException.class, () -> eventService.save(invalidEvent));
+        // Act & Assert
+        ResourceNotFoundException ex = assertThrows(ResourceNotFoundException.class, () -> eventService.save(validEvent));
+        assertEquals("Las categorías con ID [99] no existen", ex.getMessage());
         verify(eventRepository, never()).save(any());
     }
 
@@ -150,64 +151,85 @@ class EventServiceTest {
     }
 
     @Test
-    void buscar_FechaDesdeAfterFechaHasta_ThrowsInvalidDataException() {
+    void buscar_FechaDesdeAfterFechaHasta_ThrowsBusinessRuleViolationException() {
         // Arrange
         EventFilter filtro = new EventFilter(null, null, null, LocalDate.now().plusMonths(2), LocalDate.now().plusMonths(1));
 
         // Act & Assert
-        assertThrows(InvalidDataException.class, () -> eventService.buscar(filtro, PageRequest.of(0, 5)));
+        assertThrows(BusinessRuleViolationException.class, () -> eventService.buscar(filtro, PageRequest.of(0, 5)));
         verify(eventRepository, never()).buscarResumen(any(), any(), any(), any(), any(), any());
     }
 
     @Test
-    void findById_ExistingId_ReturnsEvent() {
+    void findById_ExistingId_ReturnsFlatResponse() {
         // Arrange
         Event existente = new Event(1L, "Conferencia Java", LocalDate.now().plusMonths(1), "Descripción");
+        existente.setVenue(venue);
+        existente.getCategorias().add(new Category(8L, "Rock", "Género rock"));
         when(eventRepository.findById(1L)).thenReturn(Optional.of(existente));
 
         // Act
-        Event result = eventService.findById(1L);
+        EventResponseDTO result = eventService.findById(1L);
 
         // Assert
-        assertNotNull(result);
-        assertEquals(1L, result.getId());
+        assertEquals(1L, result.id());
+        assertEquals("Auditorio Principal", result.venueName());
+        assertEquals(List.of("Rock"), result.categoryNames());
         verify(eventRepository, times(1)).findById(1L);
     }
 
     @Test
     void findById_NonExistingId_ThrowsResourceNotFoundException() {
         // Arrange
-        when(eventRepository.findById(99L)).thenReturn(Optional.empty());
+        when(eventRepository.findById(9999L)).thenReturn(Optional.empty());
 
         // Act & Assert
-        assertThrows(ResourceNotFoundException.class, () -> eventService.findById(99L));
+        ResourceNotFoundException ex = assertThrows(ResourceNotFoundException.class, () -> eventService.findById(9999L));
+        assertEquals("El evento con ID 9999 no existe", ex.getMessage());
+    }
+
+    @Test
+    void findFormById_ReturnsIdsForEditForm() {
+        // Arrange
+        Event existente = new Event(1L, "Conferencia Java", LocalDate.now().plusMonths(1), "Descripción");
+        existente.setVenue(venue);
+        existente.getCategorias().add(new Category(8L, "Rock", "Género rock"));
+        when(eventRepository.findById(1L)).thenReturn(Optional.of(existente));
+
+        // Act
+        EventCreateDTO form = eventService.findFormById(1L);
+
+        // Assert
+        assertEquals(1L, form.getId());
+        assertEquals(1L, form.getVenueId());
+        assertEquals(Set.of(8L), form.getCategoryIds());
     }
 
     @Test
     void update_ValidData_ReturnsUpdatedEvent() {
         // Arrange
         Event existente = new Event(1L, "Nombre Viejo", LocalDate.now().plusMonths(1), "Descripción vieja");
-        Event datosNuevos = new Event(null, "Nombre Nuevo", LocalDate.now().plusMonths(2), "Descripción nueva");
-        datosNuevos.setVenue(venue);
+        existente.setVenue(new Venue(2L, "Otro lugar", "Calle", "Cali", 100));
+        EventCreateDTO datosNuevos = eventDto(1L, "Nombre Nuevo", LocalDate.now().plusMonths(2), "Descripción nueva", 1L);
         when(eventRepository.findById(1L)).thenReturn(Optional.of(existente));
-        when(venueService.findById(1L)).thenReturn(venue);
-        when(eventRepository.save(any(Event.class))).thenReturn(existente);
+        when(venueRepository.findById(1L)).thenReturn(Optional.of(venue));
+        when(eventRepository.save(existente)).thenReturn(existente);
 
         // Act
-        Event result = eventService.update(1L, datosNuevos);
+        EventResponseDTO result = eventService.update(1L, datosNuevos);
 
         // Assert
-        assertNotNull(result);
-        assertEquals("Nombre Nuevo", result.getNombre());
-        assertEquals(LocalDate.now().plusMonths(2), result.getFecha());
-        assertEquals("Auditorio Principal", result.getVenue().getNombre());
+        assertEquals("Nombre Nuevo", result.nombre());
+        assertEquals(LocalDate.now().plusMonths(2), result.fecha());
+        assertEquals("Auditorio Principal", result.venueName());
+        assertEquals(1L, existente.getId(), "El id de la entidad nunca cambia");
         verify(eventRepository, times(1)).save(existente);
     }
 
     @Test
     void update_NonExistingId_ThrowsResourceNotFoundException() {
         // Arrange
-        Event datosNuevos = new Event(null, "Nombre Nuevo", LocalDate.now().plusMonths(2), "Descripción nueva");
+        EventCreateDTO datosNuevos = eventDto(99L, "Nombre Nuevo", LocalDate.now().plusMonths(2), "Descripción nueva", 1L);
         when(eventRepository.findById(99L)).thenReturn(Optional.empty());
 
         // Act & Assert
@@ -216,14 +238,12 @@ class EventServiceTest {
     }
 
     @Test
-    void update_InvalidData_ThrowsInvalidDataException() {
+    void update_IdMismatch_ThrowsBusinessRuleViolationException() {
         // Arrange
-        Event existente = new Event(1L, "Nombre Viejo", LocalDate.now().plusMonths(1), "Descripción vieja");
-        Event datosInvalidos = new Event(null, "", LocalDate.now().plusMonths(2), "Descripción nueva");
-        when(eventRepository.findById(1L)).thenReturn(Optional.of(existente));
+        EventCreateDTO datosNuevos = eventDto(2L, "Nombre Nuevo", LocalDate.now().plusMonths(2), "Descripción nueva", 1L);
 
         // Act & Assert
-        assertThrows(InvalidDataException.class, () -> eventService.update(1L, datosInvalidos));
+        assertThrows(BusinessRuleViolationException.class, () -> eventService.update(1L, datosNuevos));
         verify(eventRepository, never()).save(any());
     }
 
@@ -251,35 +271,13 @@ class EventServiceTest {
         verify(eventRepository, never()).softDelete(any());
     }
 
-    @Test
-    void save_WithoutVenue_ThrowsInvalidDataException() {
-        // Arrange
-        Event sinLugar = new Event(null, "Conferencia Java", LocalDate.now().plusMonths(1), "Descripción");
-
-        // Act & Assert
-        assertThrows(InvalidDataException.class, () -> eventService.save(sinLugar));
-        verify(eventRepository, never()).save(any());
-    }
-
-    @Test
-    void save_WithCategories_ResolvesRelationsAndForcesActive() {
-        // Arrange
-        Category conciertos = new Category(1L, "Conciertos", "Música en vivo");
-        Category rock = new Category(8L, "Rock", "Género rock");
-        validEvent.getCategorias().add(Category.conId(1L));
-        validEvent.getCategorias().add(Category.conId(8L));
-        validEvent.setActivo(false);
-        when(venueService.findById(1L)).thenReturn(venue);
-        when(categoryService.findAllByIds(Set.of(1L, 8L))).thenReturn(List.of(conciertos, rock));
-        when(eventRepository.save(validEvent)).thenReturn(validEvent);
-
-        // Act
-        Event result = eventService.save(validEvent);
-
-        // Assert
-        assertSame(venue, result.getVenue());
-        assertEquals(Set.of(conciertos, rock), result.getCategorias());
-        assertTrue(result.getActivo());
+    static EventCreateDTO eventDto(Long id, String nombre, LocalDate fecha, String descripcion, Long venueId) {
+        EventCreateDTO dto = new EventCreateDTO();
+        dto.setId(id);
+        dto.setNombre(nombre);
+        dto.setFecha(fecha);
+        dto.setDescripcion(descripcion);
+        dto.setVenueId(venueId);
+        return dto;
     }
 }
-

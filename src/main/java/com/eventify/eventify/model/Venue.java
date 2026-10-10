@@ -22,7 +22,7 @@ public class Venue {
     private Long id;
 
     @NotBlank(message = "El nombre del lugar no puede estar vacío")
-    @Column(nullable = false, length = 150)
+    @Column(nullable = false, unique = true, length = 150)
     private String nombre;
 
     @NotBlank(message = "La dirección no puede estar vacía")

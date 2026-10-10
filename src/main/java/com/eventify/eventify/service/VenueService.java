@@ -1,78 +1,91 @@
 package com.eventify.eventify.service;
 
-import com.eventify.eventify.exception.InvalidDataException;
+import com.eventify.eventify.dto.VenueCreateDTO;
+import com.eventify.eventify.dto.VenueResponseDTO;
+import com.eventify.eventify.exception.BusinessRuleViolationException;
+import com.eventify.eventify.exception.DuplicateResourceException;
 import com.eventify.eventify.exception.ResourceNotFoundException;
+import com.eventify.eventify.mapper.VenueMapper;
 import com.eventify.eventify.model.Venue;
 import com.eventify.eventify.repository.VenueRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 
+/**
+ * Recibe DTOs de entrada y retorna DTOs de salida: la entidad Venue no sale de la capa de persistencia.
+ * El formato de los datos ya llega validado por Bean Validation (@Valid en el controlador);
+ * aquí solo quedan las reglas que dependen de la BD (nombre único, eventos asociados).
+ */
 @Service
 public class VenueService {
 
     private final VenueRepository venueRepository;
+    private final VenueMapper venueMapper;
 
-    public VenueService(VenueRepository venueRepository){
+    public VenueService(VenueRepository venueRepository, VenueMapper venueMapper){
         this.venueRepository = venueRepository;
+        this.venueMapper = venueMapper;
     }
 
-    public Venue save(Venue venue){
-        validate(venue);
-        return venueRepository.save(venue);
+    @Transactional
+    public VenueResponseDTO save(VenueCreateDTO dto){
+        if(venueRepository.existsByNombreIgnoreCase(dto.getNombre().trim())){
+            throw new DuplicateResourceException("Ya existe un lugar con el nombre '" + dto.getNombre().trim() + "'");
+        }
+        Venue venue = venueMapper.toEntity(dto);
+        return venueMapper.toResponse(venueRepository.save(venue));
     }
 
-    public Venue findById(Long id){
-        return venueRepository.findById(id).orElseThrow(()-> new ResourceNotFoundException("No se encontró el lugar con id" + id));
+    @Transactional(readOnly = true)
+    public VenueResponseDTO findById(Long id){
+        return venueMapper.toResponse(buscarEntidad(id));
     }
 
-    public Venue update(Long id, Venue datosActualizados){
-        Venue venueExistente = findById(id);
-        validate(datosActualizados);
-
-        venueExistente.setNombre(datosActualizados.getNombre());
-        venueExistente.setDireccion(datosActualizados.getDireccion());
-        venueExistente.setCiudad(datosActualizados.getCiudad());
-        venueExistente.setCapacidad(datosActualizados.getCapacidad());
-
-        return venueRepository.save(venueExistente);
+    /** Datos actuales del lugar en el formato del formulario de edición. */
+    @Transactional(readOnly = true)
+    public VenueCreateDTO findFormById(Long id){
+        return venueMapper.toForm(buscarEntidad(id));
     }
 
+    @Transactional
+    public VenueResponseDTO update(Long id, VenueCreateDTO dto){
+        if(dto.getId() != null && !dto.getId().equals(id)){
+            throw new BusinessRuleViolationException("El ID del cuerpo (" + dto.getId() + ") no coincide con el de la URL (" + id + ")");
+        }
+        Venue venueExistente = buscarEntidad(id);
+        if(venueRepository.existsByNombreIgnoreCaseAndIdNot(dto.getNombre().trim(), id)){
+            throw new DuplicateResourceException("Ya existe otro lugar con el nombre '" + dto.getNombre().trim() + "'");
+        }
+        venueMapper.updateEntity(dto, venueExistente);
+        return venueMapper.toResponse(venueRepository.save(venueExistente));
+    }
+
+    @Transactional
     public void delete(Long id){
-        Venue venue = findById(id);
+        Venue venue = buscarEntidad(id);
         if(venueRepository.contarEventosAsociados(id) > 0){
-            throw new InvalidDataException("No se puede eliminar el lugar porque tiene eventos asociados");
+            throw new BusinessRuleViolationException("No se puede eliminar el lugar porque tiene eventos asociados");
         }
         venueRepository.delete(venue);
     }
 
-    public Page<Venue> findAll(Pageable pageable){
-        return venueRepository.findAll(pageable);
+    @Transactional(readOnly = true)
+    public Page<VenueResponseDTO> findAll(Pageable pageable){
+        return venueRepository.findAll(pageable).map(venueMapper::toResponse);
     }
 
-    public List<Venue> findAllOrdenados(){
-        return venueRepository.findAll(Sort.by("nombre"));
+    @Transactional(readOnly = true)
+    public List<VenueResponseDTO> findAllOrdenados(){
+        return venueRepository.findAll(Sort.by("nombre")).stream().map(venueMapper::toResponse).toList();
     }
 
-    private void validate(Venue venue){
-        if(venue.getNombre() == null || venue.getNombre().trim().isEmpty()){
-            throw new InvalidDataException("El nombre del lugar no puede estar vacío");
-        }
-        if(venue.getDireccion() == null || venue.getDireccion().trim().isEmpty()){
-            throw new InvalidDataException("La dirección no puede estar vacía");
-        }
-        if(venue.getCiudad() == null || venue.getCiudad().trim().isEmpty()){
-            throw new InvalidDataException("La ciudad no puede estar vacía");
-        }
-        if(venue.getCapacidad() == null){
-            throw new InvalidDataException("La capacidad es obligatoria");
-        }
-        if(venue.getCapacidad() <= 0){
-            throw new InvalidDataException("La capacidad debe ser mayor que cero");
-        }
+    private Venue buscarEntidad(Long id){
+        return venueRepository.findById(id).orElseThrow(()-> new ResourceNotFoundException("El lugar con ID " + id + " no existe"));
     }
 }

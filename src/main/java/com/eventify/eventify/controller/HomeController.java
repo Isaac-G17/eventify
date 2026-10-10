@@ -1,8 +1,8 @@
 package com.eventify.eventify.controller;
 
 import com.eventify.eventify.dto.EventFilter;
-import com.eventify.eventify.model.Event;
-import com.eventify.eventify.model.Venue;
+import com.eventify.eventify.dto.EventCreateDTO;
+import com.eventify.eventify.dto.VenueCreateDTO;
 import com.eventify.eventify.service.CategoryService;
 import com.eventify.eventify.service.EventService;
 import com.eventify.eventify.service.VenueService;
@@ -31,8 +31,8 @@ public class HomeController {
                        @RequestParam(name = "pageLugares", defaultValue = "0") int pageLugares) {
         model.addAttribute("eventos", eventService.buscar(EventFilter.sinFiltros(), PageRequest.of(pageEventos, 6)));
         model.addAttribute("lugares", venueService.findAll(PageRequest.of(pageLugares, 6)));
-        model.addAttribute("event", new Event());
-        model.addAttribute("venue", new Venue());
+        model.addAttribute("event", new EventCreateDTO());
+        model.addAttribute("venue", new VenueCreateDTO());
         model.addAttribute("venuesDisponibles", venueService.findAllOrdenados());
         model.addAttribute("categorias", categoryService.findAll());
         return "index";

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <!-- Recursos comunes del <head>: cada página conserva su propio <title> -->
+    <th:block th:fragment="recursos">
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.1.13"></script>
+    </th:block>
+</head>
+<body>
+
+<!-- Navegación entre secciones; oculta el enlace de la página actual (activo = 'inicio' | 'eventos' | 'venues') -->
+<nav th:fragment="navegacion(activo)" class="flex gap-3">
+    <a th:unless="${activo == 'inicio'}" th:href="@{/}"
+       class="px-4 py-2 rounded-2xl bg-blue-900 text-blue-100 text-sm font-medium hover:bg-blue-800 transition-all duration-300">
+        Inicio
+    </a>
+    <a th:unless="${activo == 'eventos'}" th:href="@{/admin/eventos}"
+       class="px-4 py-2 rounded-2xl bg-blue-900 text-blue-100 text-sm font-medium hover:bg-blue-800 transition-all duration-300">
+        Panel de eventos
+    </a>
+    <a th:unless="${activo == 'venues'}" th:href="@{/admin/venues}"
+       class="px-4 py-2 rounded-2xl bg-blue-900 text-blue-100 text-sm font-medium hover:bg-blue-800 transition-all duration-300">
+        Panel de lugares
+    </a>
+</nav>
+
+<!-- Encabezado de los paneles administrativos -->
+<header th:fragment="encabezado(titulo, subtitulo, activo)" class="bg-blue-950 text-white">
+    <div class="max-w-6xl mx-auto px-6 py-8 flex items-center justify-between flex-wrap gap-4">
+        <div>
+            <h1 class="text-2xl font-bold tracking-tight" th:text="${titulo}">Panel</h1>
+            <p class="mt-1 text-blue-200 text-sm" th:text="${subtitulo}">Subtítulo</p>
+        </div>
+        <nav th:replace="~{fragments/layout :: navegacion(${activo})}"></nav>
+    </div>
+</header>
+
+<!-- Mensajes enviados como flash attribute tras un redirect: confirmación (mensaje) o error -->
+<th:block th:fragment="alerta">
+    <div th:if="${mensaje}"
+         class="mb-6 px-5 py-3 rounded-2xl bg-green-50 border border-green-200 text-green-700 text-sm font-medium"
+         th:text="${mensaje}">
+        Operación realizada correctamente.
+    </div>
+    <div th:if="${error}"
+         class="mb-6 px-5 py-3 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-sm font-medium"
+         th:text="${error}">
+        No se pudo completar la operación.
+    </div>
+</th:block>
+
+<!-- Navegación de un Slice: los botones se deshabilitan solos según hasPrevious()/hasNext() -->
+<div th:fragment="paginacion(pagina, urlAnterior, urlSiguiente)"
+     th:unless="${pagina.first and !pagina.hasNext()}"
+     class="flex items-center justify-center gap-3 mt-6">
+    <a th:if="${pagina.hasPrevious()}" th:href="${urlAnterior}"
+       class="px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-600 text-sm font-medium hover:bg-slate-100 transition-all duration-300">
+        ← Anterior
+    </a>
+    <span th:unless="${pagina.hasPrevious()}" aria-disabled="true"
+          class="px-4 py-2 rounded-xl bg-slate-100 border border-slate-200 text-slate-300 text-sm font-medium cursor-not-allowed">
+        ← Anterior
+    </span>
+    <span class="px-4 py-2 text-sm text-slate-500">
+        Página <span th:text="${pagina.number + 1}"></span>
+    </span>
+    <a th:if="${pagina.hasNext()}" th:href="${urlSiguiente}"
+       class="px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-600 text-sm font-medium hover:bg-slate-100 transition-all duration-300">
+        Siguiente →
+    </a>
+    <span th:unless="${pagina.hasNext()}" aria-disabled="true"
+          class="px-4 py-2 rounded-xl bg-slate-100 border border-slate-200 text-slate-300 text-sm font-medium cursor-not-allowed">
+        Siguiente →
+    </span>
+</div>
+
+</body>
+</html>

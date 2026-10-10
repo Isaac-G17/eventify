@@ -6,7 +6,27 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.1.13"></script>
+        <style>
+            /* Campo con error de validación (th:errorclass): borde rojo + ícono de alerta */
+            .campo-invalido {
+                border-color: #dc2626 !important;
+                background-color: #fef2f2 !important;
+                padding-right: 2.5rem !important;
+                background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23dc2626' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cline x1='12' y1='8' x2='12' y2='12'/%3E%3Cline x1='12' y1='16' x2='12.01' y2='16'/%3E%3C/svg%3E");
+                background-repeat: no-repeat;
+                background-position: right 0.75rem center;
+                background-size: 1.25rem;
+            }
+            select.campo-invalido { background-position: right 2rem center; }
+            .error-campo { margin-top: 0.25rem; font-size: 0.875rem; color: #dc2626; }
+        </style>
     </th:block>
+
+<!-- Errores que no pertenecen a un campo (ej. el lugar se eliminó mientras se llenaba el formulario) -->
+<div th:fragment="erroresGlobales" th:if="${#fields.hasGlobalErrors()}"
+     class="px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
+    <p th:each="error : ${#fields.globalErrors()}" th:text="${error}">Error</p>
+</div>
 </head>
 <body>
 

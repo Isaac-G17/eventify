@@ -1,0 +1,40 @@
+spring:
+  application:
+    name: eventify
+
+  datasource:
+    url: jdbc:h2:file:./data/eventify
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  jpa:
+    hibernate:
+      # Flyway es el dueño del esquema; Hibernate solo valida que las entidades coincidan con las tablas
+      ddl-auto: validate
+    # Se desactiva para no duplicar el SQL: lo imprime el logger org.hibernate.SQL (ver logging)
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+springdoc:
+  pathsToMatch: /api/**
+
+# Auditoría SQL: sentencias formateadas + valores reales de los parámetros
+logging:
+  level:
+    org.hibernate.SQL: DEBUG
+    # Hibernate 5 (nombre clásico pedido en la HU)
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    # Hibernate 6/7 (el que usa Spring Boot 4) registra los parámetros en esta categoría
+    org.hibernate.orm.jdbc.bind: TRACE

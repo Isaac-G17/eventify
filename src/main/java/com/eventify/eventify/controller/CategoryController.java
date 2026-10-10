@@ -1,6 +1,6 @@
 package com.eventify.eventify.controller;
 
-import com.eventify.eventify.model.Category;
+import com.eventify.eventify.dto.CategoryResponseDTO;
 import com.eventify.eventify.service.CategoryService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -24,7 +24,7 @@ public class CategoryController {
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
     @Operation(summary = "Listar categorías", description = "Retorna todas las categorías ordenadas por nombre. Sus ids se usan al registrar eventos y su nombre en el filtro 'categoria' de la búsqueda")
-    public List<Category> getAll() {
+    public List<CategoryResponseDTO> getAll() {
         return categoryService.findAll();
     }
 }

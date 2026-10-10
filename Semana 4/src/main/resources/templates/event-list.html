@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <!-- Al servirse, Thymeleaf reemplaza este bloque por el fragmento; abierto como archivo, el navegador usa este contenido -->
+    <th:block th:replace="~{fragments/layout :: recursos}">
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.1.13"></script>
+    </th:block>
+    <title>Panel Administrativo - Eventos</title>
+</head>
+<body class="bg-slate-50 text-slate-900">
+
+<header th:replace="~{fragments/layout :: encabezado('Panel de Eventos', 'Administra el catálogo de eventos.', 'eventos')}"></header>
+
+<section class="max-w-6xl mx-auto px-6 py-12">
+    <div th:replace="~{fragments/layout :: alerta}"></div>
+
+    <div class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-semibold">Eventos registrados</h2>
+        <a th:href="@{/admin/eventos/nuevo}"
+           class="px-5 py-2.5 rounded-2xl bg-blue-950 text-white font-medium shadow-sm hover:bg-blue-900 transition-all duration-300">
+            + Registrar nuevo evento
+        </a>
+    </div>
+
+    <!-- Búsqueda: GET para que los filtros queden en la URL y se conserven al paginar -->
+    <form th:action="@{/admin/eventos}" method="get"
+          class="bg-white rounded-2xl shadow-sm p-6 mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-6 items-end">
+        <div class="lg:col-span-1">
+            <label for="ciudad" class="block text-sm font-medium text-slate-600 mb-1">Ciudad</label>
+            <input type="text" id="ciudad" name="ciudad" th:value="${filtro.ciudad}" placeholder="Ej: bog"
+                   class="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-950 transition-all duration-300"/>
+        </div>
+        <div class="lg:col-span-1">
+            <label for="categoria" class="block text-sm font-medium text-slate-600 mb-1">Categoría</label>
+            <input type="text" id="categoria" name="categoria" th:value="${filtro.categoria}" placeholder="Ej: rock"
+                   class="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-950 transition-all duration-300"/>
+        </div>
+        <div class="lg:col-span-1">
+            <label for="capacidadMinima" class="block text-sm font-medium text-slate-600 mb-1">Capacidad mínima</label>
+            <input type="number" min="1" id="capacidadMinima" name="capacidadMinima" th:value="${filtro.capacidadMinima}"
+                   class="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-950 transition-all duration-300"/>
+        </div>
+        <div class="lg:col-span-1">
+            <label for="fechaDesde" class="block text-sm font-medium text-slate-600 mb-1">Desde</label>
+            <input type="date" id="fechaDesde" name="fechaDesde" th:value="${filtro.fechaDesde}"
+                   class="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-950 transition-all duration-300"/>
+        </div>
+        <div class="lg:col-span-1">
+            <label for="fechaHasta" class="block text-sm font-medium text-slate-600 mb-1">Hasta</label>
+            <input type="date" id="fechaHasta" name="fechaHasta" th:value="${filtro.fechaHasta}"
+                   class="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-950 transition-all duration-300"/>
+        </div>
+        <div class="flex gap-2 lg:col-span-1">
+            <button type="submit"
+                    class="flex-1 px-4 py-2.5 rounded-2xl bg-blue-950 text-white font-medium shadow-sm hover:bg-blue-900 transition-all duration-300">
+                Buscar
+            </button>
+            <a th:href="@{/admin/eventos}"
+               class="px-4 py-2.5 rounded-2xl bg-slate-100 text-slate-600 font-medium hover:bg-slate-200 transition-all duration-300">
+                Limpiar
+            </a>
+        </div>
+    </form>
+
+    <div th:if="${eventos.isEmpty()}" class="text-slate-500">
+        <span th:if="${filtro.hayFiltrosActivos()}">No se encontraron eventos que coincidan con la búsqueda.</span>
+        <span th:unless="${filtro.hayFiltrosActivos()}">Actualmente no hay eventos programados.</span>
+    </div>
+
+    <div th:unless="${eventos.isEmpty()}" class="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <table class="w-full text-left">
+            <thead class="bg-blue-950 text-blue-100 text-sm uppercase tracking-wide">
+            <tr>
+                <th class="px-6 py-3">ID</th>
+                <th class="px-6 py-3">Nombre</th>
+                <th class="px-6 py-3">Fecha</th>
+                <th class="px-6 py-3">Lugar</th>
+                <th class="px-6 py-3">Ciudad</th>
+                <th class="px-6 py-3">Acciones</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="evento : ${eventos}"
+                class="border-t border-slate-100 hover:bg-blue-50 transition-all duration-300">
+                <td class="px-6 py-4 text-slate-400" th:text="${evento.id}"></td>
+                <td class="px-6 py-4 font-medium" th:text="${evento.nombre}"></td>
+                <td class="px-6 py-4 text-slate-500" th:text="${evento.fecha}"></td>
+                <td class="px-6 py-4 text-slate-500" th:text="${evento.lugar}"></td>
+                <td class="px-6 py-4 text-slate-500" th:text="${evento.ciudad}"></td>
+                <td class="px-6 py-4">
+                    <div class="flex gap-2">
+                        <a th:href="@{/admin/eventos/{id}/editar(id=${evento.id})}"
+                           class="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 text-sm font-medium hover:bg-slate-200 transition-all duration-300">
+                            Editar
+                        </a>
+                        <form th:action="@{/admin/eventos/{id}/eliminar(id=${evento.id})}" method="post"
+                              onsubmit="return confirm('¿Seguro que deseas eliminar este evento? Dejará de aparecer en el catálogo, pero se conservará en el historial.')">
+                            <button type="submit"
+                                    class="px-3 py-1.5 rounded-xl bg-red-50 text-red-600 text-sm font-medium hover:bg-red-100 transition-all duration-300">
+                                Eliminar
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div th:replace="~{fragments/layout :: paginacion(${eventos}, ${urlAnterior}, ${urlSiguiente})}"></div>
+</section>
+
+</body>
+</html>

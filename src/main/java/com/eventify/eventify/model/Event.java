@@ -1,8 +1,8 @@
 package com.eventify.eventify.model;
 
 
-import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -46,18 +46,19 @@ public class Event {
     @Column(nullable = false, length = 500)
     private String descripcion;
 
-    @Schema(description = "Borrado lógico: al eliminar un evento se marca en false y deja de aparecer en todas las consultas, pero el registro se conserva en la BD para auditoría",
-            accessMode = Schema.AccessMode.READ_ONLY)
+    @Email(message = "El correo del organizador no tiene un formato válido")
+    @Column(name = "email_organizador", length = 150)
+    private String emailOrganizador;
+
+    // Borrado lógico: false = eliminado; el registro se conserva para auditoría
     @Column(nullable = false)
     private Boolean activo = true;
 
-    @Schema(description = "Lugar donde se realiza el evento (obligatorio). Al registrar basta con enviar su id: {\"id\": 1}")
     @NotNull(message = "El lugar del evento es obligatorio")
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "venue_id", nullable = false)
     private Venue venue;
 
-    @Schema(description = "Categorías temáticas del evento. Al registrar basta con enviar sus ids: [{\"id\": 1}, {\"id\": 8}]")
     @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(name = "events_categories",
             joinColumns = @JoinColumn(name = "event_id"),

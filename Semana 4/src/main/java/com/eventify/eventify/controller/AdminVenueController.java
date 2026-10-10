@@ -1,0 +1,65 @@
+package com.eventify.eventify.controller;
+
+import com.eventify.eventify.exception.InvalidDataException;
+import com.eventify.eventify.model.Venue;
+import com.eventify.eventify.service.VenueService;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+@Controller
+@RequestMapping("/admin/venues")
+public class AdminVenueController {
+
+    private final VenueService venueService;
+
+    public AdminVenueController(VenueService venueService) {
+        this.venueService = venueService;
+    }
+
+    @GetMapping
+    public String listar(Model model, @PageableDefault(size = 8) Pageable pageable) {
+        model.addAttribute("venues", venueService.findAll(pageable));
+        return "venues-list";
+    }
+
+    @GetMapping("/nuevo")
+    public String mostrarFormulario(Model model) {
+        model.addAttribute("venue", new Venue());
+        return "venues-form";
+    }
+
+    @GetMapping("/{id}/editar")
+    public String mostrarFormularioEdicion(@PathVariable Long id, Model model) {
+        model.addAttribute("venue", venueService.findById(id));
+        return "venues-form";
+    }
+
+    @PostMapping
+    public String guardar(@ModelAttribute Venue venue, RedirectAttributes redirectAttributes) {
+        venueService.save(venue);
+        redirectAttributes.addFlashAttribute("mensaje", "Lugar registrado correctamente.");
+        return "redirect:/admin/venues";
+    }
+
+    @PostMapping("/{id}")
+    public String actualizar(@PathVariable Long id, @ModelAttribute Venue venue, RedirectAttributes redirectAttributes) {
+        venueService.update(id, venue);
+        redirectAttributes.addFlashAttribute("mensaje", "Lugar actualizado correctamente.");
+        return "redirect:/admin/venues";
+    }
+
+    @PostMapping("/{id}/eliminar")
+    public String eliminar(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        try {
+            venueService.delete(id);
+            redirectAttributes.addFlashAttribute("mensaje", "Lugar eliminado correctamente.");
+        } catch (InvalidDataException e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/admin/venues";
+    }
+}

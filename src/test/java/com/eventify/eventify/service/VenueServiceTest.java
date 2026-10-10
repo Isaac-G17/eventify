@@ -1,14 +1,18 @@
 package com.eventify.eventify.service;
 
 
-import com.eventify.eventify.exception.InvalidDataException;
+import com.eventify.eventify.dto.VenueCreateDTO;
+import com.eventify.eventify.dto.VenueResponseDTO;
+import com.eventify.eventify.exception.BusinessRuleViolationException;
+import com.eventify.eventify.exception.DuplicateResourceException;
 import com.eventify.eventify.exception.ResourceNotFoundException;
+import com.eventify.eventify.mapper.VenueMapperImpl;
 import com.eventify.eventify.model.Venue;
 import com.eventify.eventify.repository.VenueRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
@@ -22,116 +26,71 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+/**
+ * Lógica del servicio con el mapper real de MapStruct (VenueMapperImpl) y el repositorio simulado.
+ * Las validaciones de formato (nombre vacío, capacidad mínima...) están en VenueCreateDTOValidationTest.
+ */
 @ExtendWith(MockitoExtension.class)
 class VenueServiceTest {
 
     @Mock
     private VenueRepository venueRepository;
 
-    @InjectMocks
     private VenueService venueService;
 
-    private Venue validVenue;
+    private VenueCreateDTO validVenue;
 
     @BeforeEach
     void setUp() {
-        validVenue = new Venue(null, "Auditorio Principal", "Calle 50 #20-10", "Bogotá", 300);
+        venueService = new VenueService(venueRepository, new VenueMapperImpl());
+        validVenue = venueDto(null, "Auditorio Principal", "Calle 50 #20-10", "Bogotá", 300);
     }
 
     @Test
-    void save_ValidVenue_ReturnsSavedVenue() {
+    void save_ValidVenue_ReturnsResponseDto() {
         // Arrange (Preparar)
-        Venue savedMock = new Venue(1L, "Auditorio Principal", "Calle 50 #20-10", "Bogotá", 300);
-        when(venueRepository.save(validVenue)).thenReturn(savedMock);
+        when(venueRepository.save(any(Venue.class))).thenAnswer(inv -> {
+            Venue v = inv.getArgument(0);
+            v.setId(1L);
+            return v;
+        });
 
         // Act (Actuar)
-        Venue result = venueService.save(validVenue);
+        VenueResponseDTO result = venueService.save(validVenue);
 
         // Assert (Verificar)
         assertNotNull(result);
-        assertEquals(1L, result.getId());
-        assertEquals("Auditorio Principal", result.getNombre());
-        verify(venueRepository, times(1)).save(validVenue);
+        assertEquals(1L, result.id());
+        assertEquals("Auditorio Principal", result.nombre());
+        assertEquals("Bogotá", result.ciudad());
+        verify(venueRepository, times(1)).save(any(Venue.class));
     }
 
     @Test
-    void save_EmptyName_ThrowsInvalidDataException() {
-        // Arrange (Preparar)
-        Venue invalidVenue = new Venue(null, "", "Calle 50 #20-10", "Bogotá", 300);
+    void save_DuplicateName_ThrowsDuplicateResourceException() {
+        // Arrange
+        when(venueRepository.existsByNombreIgnoreCase("Auditorio Principal")).thenReturn(true);
 
-        // Act & Assert (Actuar y Verificar)
-        assertThrows(InvalidDataException.class, () -> venueService.save(invalidVenue));
+        // Act & Assert
+        assertThrows(DuplicateResourceException.class, () -> venueService.save(validVenue));
         verify(venueRepository, never()).save(any());
     }
 
     @Test
-    void save_NullName_ThrowsInvalidDataException() {
-        // Arrange (Preparar)
-        Venue invalidVenue = new Venue(null, null, "Calle 50 #20-10", "Bogotá", 300);
-
-        // Act & Assert (Actuar y Verificar)
-        assertThrows(InvalidDataException.class, () -> venueService.save(invalidVenue));
-        verify(venueRepository, never()).save(any());
-    }
-
-    @Test
-    void save_EmptyDireccion_ThrowsInvalidDataException() {
-        // Arrange (Preparar)
-        Venue invalidVenue = new Venue(null, "Auditorio Principal", "   ", "Bogotá", 300);
-
-        // Act & Assert (Actuar y Verificar)
-        assertThrows(InvalidDataException.class, () -> venueService.save(invalidVenue));
-        verify(venueRepository, never()).save(any());
-    }
-
-    @Test
-    void save_NullCapacidad_ThrowsInvalidDataException() {
-        // Arrange (Preparar)
-        Venue invalidVenue = new Venue(null, "Auditorio Principal", "Calle 50 #20-10", "Bogotá", null);
-
-        // Act & Assert (Actuar y Verificar)
-        assertThrows(InvalidDataException.class, () -> venueService.save(invalidVenue));
-        verify(venueRepository, never()).save(any());
-    }
-
-    @Test
-    void save_NegativeCapacidad_ThrowsInvalidDataException() {
-        // Arrange (Preparar)
-        Venue invalidVenue = new Venue(null, "Auditorio Principal", "Calle 50 #20-10", "Bogotá", -5);
-
-        // Act & Assert (Actuar y Verificar)
-        assertThrows(InvalidDataException.class, () -> venueService.save(invalidVenue));
-        verify(venueRepository, never()).save(any());
-    }
-
-    @Test
-    void save_ZeroCapacidad_ThrowsInvalidDataException() {
-        // Arrange (Preparar)
-        Venue invalidVenue = new Venue(null, "Auditorio Principal", "Calle 50 #20-10", "Bogotá", 0);
-
-        // Act & Assert (Actuar y Verificar)
-        assertThrows(InvalidDataException.class, () -> venueService.save(invalidVenue));
-        verify(venueRepository, never()).save(any());
-    }
-
-    @Test
-    void findAll_WithPageable_ReturnsPageOfVenues() {
+    void findAll_WithPageable_ReturnsPageOfResponseDtos() {
         // Arrange
         List<Venue> contenido = List.of(new Venue(1L, "Lugar A", "Dirección A", "Bogotá", 100));
         Pageable pageable = PageRequest.of(0, 5);
-        Page<Venue> paginaMock = new PageImpl<>(contenido, pageable, 1);
-        when(venueRepository.findAll(pageable)).thenReturn(paginaMock);
+        when(venueRepository.findAll(pageable)).thenReturn(new PageImpl<>(contenido, pageable, 1));
 
         // Act
-        Page<Venue> result = venueService.findAll(pageable);
+        Page<VenueResponseDTO> result = venueService.findAll(pageable);
 
         // Assert
-        assertNotNull(result);
         assertEquals(1, result.getTotalElements());
-        assertEquals(1, result.getContent().size());
+        assertEquals("Lugar A", result.getContent().get(0).nombre());
         verify(venueRepository, times(1)).findAll(pageable);
     }
-
 
     @Test
     void findById_ExistingId_ReturnsVenue() {
@@ -140,12 +99,11 @@ class VenueServiceTest {
         when(venueRepository.findById(1L)).thenReturn(Optional.of(existente));
 
         // Act
-        Venue result = venueService.findById(1L);
+        VenueResponseDTO result = venueService.findById(1L);
 
         // Assert
-        assertNotNull(result);
-        assertEquals(1L, result.getId());
-        verify(venueRepository, times(1)).findById(1L);
+        assertEquals(1L, result.id());
+        assertEquals(300, result.capacidad());
     }
 
     @Test
@@ -154,31 +112,46 @@ class VenueServiceTest {
         when(venueRepository.findById(99L)).thenReturn(Optional.empty());
 
         // Act & Assert
-        assertThrows(ResourceNotFoundException.class, () -> venueService.findById(99L));
+        ResourceNotFoundException ex = assertThrows(ResourceNotFoundException.class, () -> venueService.findById(99L));
+        assertEquals("El lugar con ID 99 no existe", ex.getMessage());
+    }
+
+    @Test
+    void findFormById_ReturnsDtoWithIdForEditForm() {
+        // Arrange
+        when(venueRepository.findById(1L)).thenReturn(Optional.of(new Venue(1L, "Auditorio Principal", "Calle 50", "Bogotá", 300)));
+
+        // Act
+        VenueCreateDTO form = venueService.findFormById(1L);
+
+        // Assert
+        assertEquals(1L, form.getId());
+        assertEquals("Auditorio Principal", form.getNombre());
     }
 
     @Test
     void update_ValidData_ReturnsUpdatedVenue() {
         // Arrange
         Venue existente = new Venue(1L, "Nombre Viejo", "Dirección Vieja", "Bogotá", 100);
-        Venue datosNuevos = new Venue(null, "Nombre Nuevo", "Dirección Nueva", "Bogotá", 200);
+        VenueCreateDTO datosNuevos = venueDto(1L, "Nombre Nuevo", "Dirección Nueva", "Cali", 200);
         when(venueRepository.findById(1L)).thenReturn(Optional.of(existente));
-        when(venueRepository.save(any(Venue.class))).thenReturn(existente);
+        when(venueRepository.save(existente)).thenReturn(existente);
 
         // Act
-        Venue result = venueService.update(1L, datosNuevos);
+        VenueResponseDTO result = venueService.update(1L, datosNuevos);
 
         // Assert
-        assertNotNull(result);
-        assertEquals("Nombre Nuevo", result.getNombre());
-        assertEquals(200, result.getCapacidad());
+        assertEquals("Nombre Nuevo", result.nombre());
+        assertEquals("Cali", result.ciudad());
+        assertEquals(200, result.capacidad());
+        assertEquals(1L, existente.getId(), "El id de la entidad nunca cambia");
         verify(venueRepository, times(1)).save(existente);
     }
 
     @Test
     void update_NonExistingId_ThrowsResourceNotFoundException() {
         // Arrange
-        Venue datosNuevos = new Venue(null, "Nombre Nuevo", "Dirección Nueva", "Bogotá", 200);
+        VenueCreateDTO datosNuevos = venueDto(99L, "Nombre Nuevo", "Dirección Nueva", "Bogotá", 200);
         when(venueRepository.findById(99L)).thenReturn(Optional.empty());
 
         // Act & Assert
@@ -187,14 +160,25 @@ class VenueServiceTest {
     }
 
     @Test
-    void update_InvalidData_ThrowsInvalidDataException() {
+    void update_IdMismatch_ThrowsBusinessRuleViolationException() {
         // Arrange
-        Venue existente = new Venue(1L, "Nombre Viejo", "Dirección Vieja", "Bogotá", 100);
-        Venue datosInvalidos = new Venue(null, "Nombre Nuevo", "Dirección Nueva", "Bogotá", -10);
-        when(venueRepository.findById(1L)).thenReturn(Optional.of(existente));
+        VenueCreateDTO datosNuevos = venueDto(2L, "Nombre Nuevo", "Dirección Nueva", "Bogotá", 200);
 
         // Act & Assert
-        assertThrows(InvalidDataException.class, () -> venueService.update(1L, datosInvalidos));
+        assertThrows(BusinessRuleViolationException.class, () -> venueService.update(1L, datosNuevos));
+        verify(venueRepository, never()).save(any());
+    }
+
+    @Test
+    void update_NameUsedByAnotherVenue_ThrowsDuplicateResourceException() {
+        // Arrange
+        Venue existente = new Venue(1L, "Nombre Viejo", "Dirección Vieja", "Bogotá", 100);
+        VenueCreateDTO datosNuevos = venueDto(1L, "Teatro Municipal", "Dirección Nueva", "Bogotá", 200);
+        when(venueRepository.findById(1L)).thenReturn(Optional.of(existente));
+        when(venueRepository.existsByNombreIgnoreCaseAndIdNot("Teatro Municipal", 1L)).thenReturn(true);
+
+        // Act & Assert
+        assertThrows(DuplicateResourceException.class, () -> venueService.update(1L, datosNuevos));
         verify(venueRepository, never()).save(any());
     }
 
@@ -222,24 +206,38 @@ class VenueServiceTest {
     }
 
     @Test
-    void save_EmptyCiudad_ThrowsInvalidDataException() {
-        // Arrange
-        Venue invalidVenue = new Venue(null, "Auditorio Principal", "Calle 50 #20-10", "  ", 300);
-
-        // Act & Assert
-        assertThrows(InvalidDataException.class, () -> venueService.save(invalidVenue));
-        verify(venueRepository, never()).save(any());
-    }
-
-    @Test
-    void delete_VenueWithEvents_ThrowsInvalidDataException() {
+    void delete_VenueWithEvents_ThrowsBusinessRuleViolationException() {
         // Arrange
         Venue existente = new Venue(1L, "Auditorio Principal", "Calle 50 #20-10", "Bogotá", 300);
         when(venueRepository.findById(1L)).thenReturn(Optional.of(existente));
         when(venueRepository.contarEventosAsociados(1L)).thenReturn(3L);
 
         // Act & Assert
-        assertThrows(InvalidDataException.class, () -> venueService.delete(1L));
+        assertThrows(BusinessRuleViolationException.class, () -> venueService.delete(1L));
         verify(venueRepository, never()).delete(any());
+    }
+
+    @Test
+    void save_MapsDtoToEntityWithoutId() {
+        // Arrange
+        validVenue.setId(50L);
+        ArgumentCaptor<Venue> guardado = ArgumentCaptor.forClass(Venue.class);
+        when(venueRepository.save(guardado.capture())).thenAnswer(inv -> inv.getArgument(0));
+
+        // Act
+        venueService.save(validVenue);
+
+        // Assert: el id lo genera la BD, nunca el cliente
+        assertNull(guardado.getValue().getId());
+    }
+
+    static VenueCreateDTO venueDto(Long id, String nombre, String direccion, String ciudad, Integer capacidad) {
+        VenueCreateDTO dto = new VenueCreateDTO();
+        dto.setId(id);
+        dto.setNombre(nombre);
+        dto.setDireccion(direccion);
+        dto.setCiudad(ciudad);
+        dto.setCapacidad(capacidad);
+        return dto;
     }
 }

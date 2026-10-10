@@ -8,14 +8,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.test.context.jdbc.Sql;
 
 import java.time.LocalDate;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-// Solo V1 y V2: el esquema real de Flyway pero sin el seed masivo de V3
-@DataJpaTest(properties = "spring.flyway.target=2")
+// Esquema real de Flyway (V1-V4) sin el seed masivo: se vacía dentro de la transacción del test, que se revierte al final
+@DataJpaTest
+@Sql(statements = {"DELETE FROM events_categories", "DELETE FROM events", "DELETE FROM venues"})
 class EventRepositoryTest {
 
     @Autowired

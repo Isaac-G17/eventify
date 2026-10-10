@@ -1,36 +1,28 @@
 package com.eventify.eventify.service;
 
-import com.eventify.eventify.exception.ResourceNotFoundException;
-import com.eventify.eventify.model.Category;
+import com.eventify.eventify.dto.CategoryResponseDTO;
+import com.eventify.eventify.mapper.CategoryMapper;
 import com.eventify.eventify.repository.CategoryRepository;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Set;
 
 
 @Service
 public class CategoryService {
 
     private final CategoryRepository categoryRepository;
+    private final CategoryMapper categoryMapper;
 
-    public CategoryService(CategoryRepository categoryRepository){
+    public CategoryService(CategoryRepository categoryRepository, CategoryMapper categoryMapper){
         this.categoryRepository = categoryRepository;
+        this.categoryMapper = categoryMapper;
     }
 
-    public List<Category> findAll(){
-        return categoryRepository.findAll(Sort.by("nombre"));
-    }
-
-    public List<Category> findAllByIds(Set<Long> ids){
-        if(ids.isEmpty()){
-            return List.of();
-        }
-        List<Category> categorias = categoryRepository.findAllById(ids);
-        if(categorias.size() != ids.size()){
-            throw new ResourceNotFoundException("Una o más categorías no existen: " + ids);
-        }
-        return categorias;
+    @Transactional(readOnly = true)
+    public List<CategoryResponseDTO> findAll(){
+        return categoryMapper.toResponse(categoryRepository.findAll(Sort.by("nombre")));
     }
 }

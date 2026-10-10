@@ -27,10 +27,4 @@ public class Category {
     @Column(nullable = false, length = 250)
     private String descripcion;
 
-    /** Referencia a una categoría existente solo por su id (el servicio la resuelve contra la BD). */
-    public static Category conId(Long id) {
-        Category category = new Category();
-        category.setId(id);
-        return category;
-    }
 }

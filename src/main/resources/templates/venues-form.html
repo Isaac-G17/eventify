@@ -1,7 +1,12 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <th:block th:replace="~{fragments/layout :: recursos}"></th:block>
+    <!-- Al servirse, Thymeleaf reemplaza este bloque por el fragmento; abierto como archivo, el navegador usa este contenido -->
+    <th:block th:replace="~{fragments/layout :: recursos}">
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.1.13"></script>
+    </th:block>
     <title>Formulario de Lugar</title>
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen flex items-center justify-center px-6">

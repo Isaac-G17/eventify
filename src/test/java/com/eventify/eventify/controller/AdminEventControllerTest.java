@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.matchesRegex;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -123,6 +124,26 @@ class AdminEventControllerTest {
                 .andExpect(model().attributeExists("event", "venues", "categorias"))
                 .andExpect(content().string(containsString("name=\"venue.id\"")))
                 .andExpect(content().string(containsString("name=\"categoriaIds\"")));
+    }
+
+    @Test
+    void mostrarFormularioEdicion_MuestraFechaEnFormatoIsoYRelacionesMarcadas() throws Exception {
+        Venue venue = new Venue(5L, "Estadio Cubierto Los Andes", "Carrera 45", "Bogotá", 1200);
+        Category rock = new Category(8L, "Rock", "Género rock");
+        Event evento = new Event(21L, "Concierto de ROCK", LocalDate.of(2026, 12, 20), "Noche de rock");
+        evento.setVenue(venue);
+        evento.getCategorias().add(rock);
+        when(eventService.findById(21L)).thenReturn(evento);
+        when(venueService.findAllOrdenados()).thenReturn(List.of(venue));
+        when(categoryService.findAll()).thenReturn(List.of(rock, new Category(1L, "Conciertos", "Música en vivo")));
+
+        mockMvc.perform(get("/admin/eventos/21/editar"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("event-form"))
+                // <input type="date"> solo entiende yyyy-MM-dd
+                .andExpect(content().string(containsString("value=\"2026-12-20\"")))
+                .andExpect(content().string(matchesRegex("(?s).*value=\"5\"\\s+selected=\"selected\".*")))
+                .andExpect(content().string(matchesRegex("(?s).*value=\"8\"\\s+class=\"accent-blue-950\" checked=\"checked\".*")));
     }
 
     @Test

@@ -11,6 +11,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.SQLRestriction;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDate;
 import java.util.HashSet;
@@ -35,6 +36,8 @@ public class Event {
 
     @NotNull(message = "La fecha del evento es obligatoria")
     @FutureOrPresent(message = "La fecha del evento no puede estar en el pasado")
+    // Formato yyyy-MM-dd: el que entiende <input type="date"> al mostrar y al enviar el formulario
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     @Column(nullable = false)
     private LocalDate fecha;
 

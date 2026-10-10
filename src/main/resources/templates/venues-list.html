@@ -1,33 +1,16 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <th:block th:replace="~{fragments/layout :: recursos}"></th:block>
     <title>Panel Administrativo - Venues</title>
-    <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-50 text-slate-900">
 
-<header class="bg-blue-950 text-white">
-    <div class="max-w-6xl mx-auto px-6 py-8 flex items-center justify-between flex-wrap gap-4">
-        <div>
-            <h1 class="text-2xl font-bold tracking-tight">Panel de Lugares</h1>
-            <p class="mt-1 text-blue-200 text-sm">Administra el catálogo de lugares.</p>
-        </div>
-        <nav class="flex gap-3">
-            <a th:href="@{/}"
-               class="px-4 py-2 rounded-2xl bg-blue-900 text-blue-100 text-sm font-medium hover:bg-blue-800 transition-all duration-300">
-                Inicio
-            </a>
-            <a th:href="@{/admin/eventos}"
-               class="px-4 py-2 rounded-2xl bg-blue-900 text-blue-100 text-sm font-medium hover:bg-blue-800 transition-all duration-300">
-                Panel de eventos
-            </a>
-        </nav>
-    </div>
-</header>
+<header th:replace="~{fragments/layout :: encabezado('Panel de Lugares', 'Administra el catálogo de lugares.', 'venues')}"></header>
 
 <section class="max-w-6xl mx-auto px-6 py-12">
+    <div th:replace="~{fragments/layout :: alerta}"></div>
+
     <div class="flex items-center justify-between mb-6">
         <h2 class="text-2xl font-semibold">Lugares registrados</h2>
         <a th:href="@{/admin/venues/nuevo}"

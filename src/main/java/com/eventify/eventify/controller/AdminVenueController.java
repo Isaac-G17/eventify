@@ -7,6 +7,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
 @RequestMapping("/admin/venues")
@@ -37,20 +38,23 @@ public class AdminVenueController {
     }
 
     @PostMapping
-    public String guardar(@ModelAttribute Venue venue) {
+    public String guardar(@ModelAttribute Venue venue, RedirectAttributes redirectAttributes) {
         venueService.save(venue);
+        redirectAttributes.addFlashAttribute("mensaje", "Lugar registrado correctamente.");
         return "redirect:/admin/venues";
     }
 
     @PostMapping("/{id}")
-    public String actualizar(@PathVariable Long id, @ModelAttribute Venue venue) {
+    public String actualizar(@PathVariable Long id, @ModelAttribute Venue venue, RedirectAttributes redirectAttributes) {
         venueService.update(id, venue);
+        redirectAttributes.addFlashAttribute("mensaje", "Lugar actualizado correctamente.");
         return "redirect:/admin/venues";
     }
 
     @PostMapping("/{id}/eliminar")
-    public String eliminar(@PathVariable Long id) {
+    public String eliminar(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         venueService.delete(id);
+        redirectAttributes.addFlashAttribute("mensaje", "Lugar eliminado correctamente.");
         return "redirect:/admin/venues";
     }
 }

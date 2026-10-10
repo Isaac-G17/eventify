@@ -1,10 +1,8 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <th:block th:replace="~{fragments/layout :: recursos}"></th:block>
     <title>Eventify</title>
-    <script src="https://cdn.tailwindcss.com"></script>
     <style>
         dialog::backdrop {
             background: rgba(15, 23, 42, 0.6);
@@ -24,16 +22,7 @@
                 <h1 class="text-3xl font-bold tracking-tight">Eventify</h1>
                 <p class="mt-2 text-blue-200">Catálogo de eventos y lugares disponibles.</p>
             </div>
-            <nav class="flex gap-3">
-                <a th:href="@{/admin/eventos}"
-                   class="px-4 py-2 rounded-2xl bg-blue-900 text-blue-100 text-sm font-medium hover:bg-blue-800 transition-all duration-300">
-                    Panel de eventos
-                </a>
-                <a th:href="@{/admin/venues}"
-                   class="px-4 py-2 rounded-2xl bg-blue-900 text-blue-100 text-sm font-medium hover:bg-blue-800 transition-all duration-300">
-                    Panel de lugares
-                </a>
-            </nav>
+            <nav th:replace="~{fragments/layout :: navegacion('inicio')}"></nav>
         </div>
     </div>
 </header>

@@ -35,13 +35,13 @@ class EventServiceTest {
 
     @BeforeEach
     void setUp() {
-        validEvent = new Event(null, "Conferencia Java", LocalDate.of(2026, 10, 10), "Charla técnica de backend");
+        validEvent = new Event(null, "Conferencia Java", LocalDate.now().plusMonths(1), "Charla técnica de backend");
     }
 
     @Test
     void save_ValidEvent_ReturnsSavedEvent() {
         // Arrange (Preparar)
-        Event savedMock = new Event(1L, "Conferencia Java", LocalDate.of(2026, 10, 10), "Charla técnica de backend");
+        Event savedMock = new Event(1L, "Conferencia Java", LocalDate.now().plusMonths(1), "Charla técnica de backend");
         when(eventRepository.save(validEvent)).thenReturn(savedMock);
 
         // Act (Actuar)
@@ -57,7 +57,7 @@ class EventServiceTest {
     @Test
     void save_EmptyName_ThrowsInvalidDataException() {
         // Arrange (Preparar)
-        Event invalidEvent = new Event(null, "   ", LocalDate.of(2026, 10, 10), "Descripción");
+        Event invalidEvent = new Event(null, "   ", LocalDate.now().plusMonths(1), "Descripción");
 
         // Act & Assert (Actuar y Verificar)
         assertThrows(InvalidDataException.class, () -> eventService.save(invalidEvent));
@@ -67,7 +67,7 @@ class EventServiceTest {
     @Test
     void save_NullName_ThrowsInvalidDataException() {
         // Arrange (Preparar)
-        Event invalidEvent = new Event(null, null, LocalDate.of(2026, 10, 10), "Descripción");
+        Event invalidEvent = new Event(null, null, LocalDate.now().plusMonths(1), "Descripción");
 
         // Act & Assert (Actuar y Verificar)
         assertThrows(InvalidDataException.class, () -> eventService.save(invalidEvent));
@@ -97,7 +97,7 @@ class EventServiceTest {
     @Test
     void save_EmptyDescripcion_ThrowsInvalidDataException() {
         // Arrange (Preparar)
-        Event invalidEvent = new Event(null, "Conferencia Java", LocalDate.of(2026, 10, 10), "   ");
+        Event invalidEvent = new Event(null, "Conferencia Java", LocalDate.now().plusMonths(1), "   ");
 
         // Act & Assert (Actuar y Verificar)
         assertThrows(InvalidDataException.class, () -> eventService.save(invalidEvent));
@@ -108,7 +108,7 @@ class EventServiceTest {
     void save_DescripcionTooLong_ThrowsInvalidDataException() {
         // Arrange (Preparar)
         String descripcionLarga = "a".repeat(501);
-        Event invalidEvent = new Event(null, "Conferencia Java", LocalDate.of(2026, 10, 10), descripcionLarga);
+        Event invalidEvent = new Event(null, "Conferencia Java", LocalDate.now().plusMonths(1), descripcionLarga);
 
         // Act & Assert (Actuar y Verificar)
         assertThrows(InvalidDataException.class, () -> eventService.save(invalidEvent));
@@ -118,7 +118,7 @@ class EventServiceTest {
     @Test
     void findAll_WithPageable_ReturnsPageOfEvents() {
         // Arrange
-        List<Event> contenido = List.of(new Event(1L, "Evento 1", LocalDate.of(2026, 10, 10), "Desc 1"));
+        List<Event> contenido = List.of(new Event(1L, "Evento 1", LocalDate.now().plusMonths(1), "Desc 1"));
         Pageable pageable = PageRequest.of(0, 5);
         Page<Event> paginaMock = new PageImpl<>(contenido, pageable, 1);
         when(eventRepository.findAll(pageable)).thenReturn(paginaMock);
@@ -136,7 +136,7 @@ class EventServiceTest {
     @Test
     void findById_ExistingId_ReturnsEvent() {
         // Arrange
-        Event existente = new Event(1L, "Conferencia Java", LocalDate.of(2026, 10, 10), "Descripción");
+        Event existente = new Event(1L, "Conferencia Java", LocalDate.now().plusMonths(1), "Descripción");
         when(eventRepository.findById(1L)).thenReturn(Optional.of(existente));
 
         // Act
@@ -160,8 +160,8 @@ class EventServiceTest {
     @Test
     void update_ValidData_ReturnsUpdatedEvent() {
         // Arrange
-        Event existente = new Event(1L, "Nombre Viejo", LocalDate.of(2026, 10, 10), "Descripción vieja");
-        Event datosNuevos = new Event(null, "Nombre Nuevo", LocalDate.of(2026, 11, 15), "Descripción nueva");
+        Event existente = new Event(1L, "Nombre Viejo", LocalDate.now().plusMonths(1), "Descripción vieja");
+        Event datosNuevos = new Event(null, "Nombre Nuevo", LocalDate.now().plusMonths(2), "Descripción nueva");
         when(eventRepository.findById(1L)).thenReturn(Optional.of(existente));
         when(eventRepository.save(any(Event.class))).thenReturn(existente);
 
@@ -171,14 +171,14 @@ class EventServiceTest {
         // Assert
         assertNotNull(result);
         assertEquals("Nombre Nuevo", result.getNombre());
-        assertEquals(LocalDate.of(2026, 11, 15), result.getFecha());
+        assertEquals(LocalDate.now().plusMonths(2), result.getFecha());
         verify(eventRepository, times(1)).save(existente);
     }
 
     @Test
     void update_NonExistingId_ThrowsResourceNotFoundException() {
         // Arrange
-        Event datosNuevos = new Event(null, "Nombre Nuevo", LocalDate.of(2026, 11, 15), "Descripción nueva");
+        Event datosNuevos = new Event(null, "Nombre Nuevo", LocalDate.now().plusMonths(2), "Descripción nueva");
         when(eventRepository.findById(99L)).thenReturn(Optional.empty());
 
         // Act & Assert
@@ -189,8 +189,8 @@ class EventServiceTest {
     @Test
     void update_InvalidData_ThrowsInvalidDataException() {
         // Arrange
-        Event existente = new Event(1L, "Nombre Viejo", LocalDate.of(2026, 10, 10), "Descripción vieja");
-        Event datosInvalidos = new Event(null, "", LocalDate.of(2026, 11, 15), "Descripción nueva");
+        Event existente = new Event(1L, "Nombre Viejo", LocalDate.now().plusMonths(1), "Descripción vieja");
+        Event datosInvalidos = new Event(null, "", LocalDate.now().plusMonths(2), "Descripción nueva");
         when(eventRepository.findById(1L)).thenReturn(Optional.of(existente));
 
         // Act & Assert
@@ -201,7 +201,7 @@ class EventServiceTest {
     @Test
     void delete_ExistingId_DeletesEvent() {
         // Arrange
-        Event existente = new Event(1L, "Conferencia Java", LocalDate.of(2026, 10, 10), "Descripción");
+        Event existente = new Event(1L, "Conferencia Java", LocalDate.now().plusMonths(1), "Descripción");
         when(eventRepository.findById(1L)).thenReturn(Optional.of(existente));
 
         // Act

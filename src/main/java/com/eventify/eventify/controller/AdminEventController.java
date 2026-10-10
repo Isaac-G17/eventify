@@ -7,6 +7,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
 @RequestMapping("/admin/eventos")
@@ -37,20 +38,23 @@ public class AdminEventController {
     }
 
     @PostMapping
-    public String guardar(@ModelAttribute Event event) {
+    public String guardar(@ModelAttribute Event event, RedirectAttributes redirectAttributes) {
         eventService.save(event);
+        redirectAttributes.addFlashAttribute("mensaje", "Evento registrado correctamente.");
         return "redirect:/admin/eventos";
     }
 
     @PostMapping("/{id}")
-    public String actualizar(@PathVariable Long id, @ModelAttribute Event event) {
+    public String actualizar(@PathVariable Long id, @ModelAttribute Event event, RedirectAttributes redirectAttributes) {
         eventService.update(id, event);
+        redirectAttributes.addFlashAttribute("mensaje", "Evento actualizado correctamente.");
         return "redirect:/admin/eventos";
     }
 
     @PostMapping("/{id}/eliminar")
-    public String eliminar(@PathVariable Long id) {
+    public String eliminar(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         eventService.delete(id);
+        redirectAttributes.addFlashAttribute("mensaje", "Evento eliminado correctamente.");
         return "redirect:/admin/eventos";
     }
 }

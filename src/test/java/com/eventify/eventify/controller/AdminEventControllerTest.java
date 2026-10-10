@@ -13,6 +13,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.time.LocalDate;
 import java.util.List;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -69,6 +70,18 @@ class AdminEventControllerTest {
                         .param("fecha", "2026-10-10")
                         .param("descripcion", "Descripción de prueba"))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/admin/eventos"));
+                .andExpect(redirectedUrl("/admin/eventos"))
+                .andExpect(flash().attribute("mensaje", "Evento registrado correctamente."));
+    }
+
+    @Test
+    void listar_ConMensajeFlash_MuestraConfirmacionEnLaVista() throws Exception {
+        when(eventService.findAll(any())).thenReturn(new PageImpl<>(List.of()));
+
+        mockMvc.perform(get("/admin/eventos")
+                        .flashAttr("mensaje", "Evento registrado correctamente."))
+                .andExpect(status().isOk())
+                .andExpect(view().name("event-list"))
+                .andExpect(content().string(containsString("Evento registrado correctamente.")));
     }
 }

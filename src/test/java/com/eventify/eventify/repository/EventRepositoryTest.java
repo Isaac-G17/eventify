@@ -21,7 +21,7 @@ class EventRepositoryTest {
     @Test
     void save_PersistsEventWithGeneratedId() {
         // Arrange
-        Event event = new Event(null, "Conferencia Java", LocalDate.of(2026, 10, 10), "Descripción");
+        Event event = new Event(null, "Conferencia Java", LocalDate.now().plusMonths(1), "Descripción");
 
         // Act
         Event saved = eventRepository.save(event);
@@ -34,9 +34,9 @@ class EventRepositoryTest {
     @Test
     void findByNombreContaining_ReturnsMatchingEvents() {
         // Arrange
-        eventRepository.save(new Event(null, "Conferencia Java", LocalDate.of(2026, 10, 10), "Descripción 1"));
-        eventRepository.save(new Event(null, "Workshop Spring", LocalDate.of(2026, 11, 10), "Descripción 2"));
-        eventRepository.save(new Event(null, "Conferencia Python", LocalDate.of(2026, 12, 10), "Descripción 3"));
+        eventRepository.save(new Event(null, "Conferencia Java", LocalDate.now().plusMonths(1), "Descripción 1"));
+        eventRepository.save(new Event(null, "Workshop Spring", LocalDate.now().plusMonths(2), "Descripción 2"));
+        eventRepository.save(new Event(null, "Conferencia Python", LocalDate.now().plusMonths(3), "Descripción 3"));
 
         // Act
         List<Event> result = eventRepository.findByNombreContaining("Conferencia");
@@ -49,7 +49,7 @@ class EventRepositoryTest {
     void findAll_WithPageable_ReturnsCorrectPageSizeAndMetadata() {
         // Arrange
         for (int i = 1; i <= 12; i++) {
-            eventRepository.save(new Event(null, "Evento " + i, LocalDate.of(2026, 10, 1), "Desc " + i));
+            eventRepository.save(new Event(null, "Evento " + i, LocalDate.now().plusMonths(1), "Desc " + i));
         }
 
         // Act

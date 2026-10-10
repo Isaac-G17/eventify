@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <!-- Recursos comunes del <head>: cada página conserva su propio <title> -->
+    <th:block th:fragment="recursos">
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src="https://cdn.tailwindcss.com"></script>
+    </th:block>
+</head>
+<body>
+
+<!-- Navegación entre secciones; oculta el enlace de la página actual (activo = 'inicio' | 'eventos' | 'venues') -->
+<nav th:fragment="navegacion(activo)" class="flex gap-3">
+    <a th:unless="${activo == 'inicio'}" th:href="@{/}"
+       class="px-4 py-2 rounded-2xl bg-blue-900 text-blue-100 text-sm font-medium hover:bg-blue-800 transition-all duration-300">
+        Inicio
+    </a>
+    <a th:unless="${activo == 'eventos'}" th:href="@{/admin/eventos}"
+       class="px-4 py-2 rounded-2xl bg-blue-900 text-blue-100 text-sm font-medium hover:bg-blue-800 transition-all duration-300">
+        Panel de eventos
+    </a>
+    <a th:unless="${activo == 'venues'}" th:href="@{/admin/venues}"
+       class="px-4 py-2 rounded-2xl bg-blue-900 text-blue-100 text-sm font-medium hover:bg-blue-800 transition-all duration-300">
+        Panel de lugares
+    </a>
+</nav>
+
+<!-- Encabezado de los paneles administrativos -->
+<header th:fragment="encabezado(titulo, subtitulo, activo)" class="bg-blue-950 text-white">
+    <div class="max-w-6xl mx-auto px-6 py-8 flex items-center justify-between flex-wrap gap-4">
+        <div>
+            <h1 class="text-2xl font-bold tracking-tight" th:text="${titulo}">Panel</h1>
+            <p class="mt-1 text-blue-200 text-sm" th:text="${subtitulo}">Subtítulo</p>
+        </div>
+        <nav th:replace="~{fragments/layout :: navegacion(${activo})}"></nav>
+    </div>
+</header>
+
+<!-- Mensaje de confirmación enviado como flash attribute tras un redirect -->
+<div th:fragment="alerta" th:if="${mensaje}"
+     class="mb-6 px-5 py-3 rounded-2xl bg-green-50 border border-green-200 text-green-700 text-sm font-medium"
+     th:text="${mensaje}">
+    Operación realizada correctamente.
+</div>
+
+</body>
+</html>

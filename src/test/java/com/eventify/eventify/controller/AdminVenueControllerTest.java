@@ -73,6 +73,7 @@ class AdminVenueControllerTest {
                         .param("direccion", "Calle 50 #20-10")
                         .param("capacidad", "300"))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/admin/venues"));
+                .andExpect(redirectedUrl("/admin/venues"))
+                .andExpect(flash().attribute("mensaje", "Lugar registrado correctamente."));
     }
 }

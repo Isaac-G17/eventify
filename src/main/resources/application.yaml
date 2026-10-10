@@ -10,8 +10,17 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
-    show-sql: true
+      # Flyway es el dueño del esquema; Hibernate solo valida que las entidades coincidan con las tablas
+      ddl-auto: validate
+    # Se desactiva para no duplicar el SQL: lo imprime el logger org.hibernate.SQL (ver logging)
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
 
   h2:
     console:
@@ -21,6 +30,11 @@ spring:
 springdoc:
   pathsToMatch: /api/**
 
-app:
-  seeder:
-    enabled: false
+# Auditoría SQL: sentencias formateadas + valores reales de los parámetros
+logging:
+  level:
+    org.hibernate.SQL: DEBUG
+    # Hibernate 5 (nombre clásico pedido en la HU)
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    # Hibernate 6/7 (el que usa Spring Boot 4) registra los parámetros en esta categoría
+    org.hibernate.orm.jdbc.bind: TRACE

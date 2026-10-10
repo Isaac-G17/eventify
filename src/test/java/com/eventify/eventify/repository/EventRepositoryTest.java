@@ -1,6 +1,8 @@
 package com.eventify.eventify.repository;
 
 import com.eventify.eventify.model.Event;
+import com.eventify.eventify.model.Venue;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -12,16 +14,33 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@DataJpaTest
+// Solo V1 y V2: el esquema real de Flyway pero sin el seed masivo de V3
+@DataJpaTest(properties = "spring.flyway.target=2")
 class EventRepositoryTest {
 
     @Autowired
     private EventRepository eventRepository;
 
+    @Autowired
+    private VenueRepository venueRepository;
+
+    private Venue venue;
+
+    @BeforeEach
+    void setUp() {
+        venue = venueRepository.save(new Venue(null, "Auditorio Principal", "Calle 50 #20-10", "Bogotá", 300));
+    }
+
+    private Event nuevoEvento(String nombre, LocalDate fecha, String descripcion) {
+        Event event = new Event(null, nombre, fecha, descripcion);
+        event.setVenue(venue);
+        return event;
+    }
+
     @Test
     void save_PersistsEventWithGeneratedId() {
         // Arrange
-        Event event = new Event(null, "Conferencia Java", LocalDate.now().plusMonths(1), "Descripción");
+        Event event = nuevoEvento("Conferencia Java", LocalDate.now().plusMonths(1), "Descripción");
 
         // Act
         Event saved = eventRepository.save(event);
@@ -34,9 +53,9 @@ class EventRepositoryTest {
     @Test
     void findByNombreContaining_ReturnsMatchingEvents() {
         // Arrange
-        eventRepository.save(new Event(null, "Conferencia Java", LocalDate.now().plusMonths(1), "Descripción 1"));
-        eventRepository.save(new Event(null, "Workshop Spring", LocalDate.now().plusMonths(2), "Descripción 2"));
-        eventRepository.save(new Event(null, "Conferencia Python", LocalDate.now().plusMonths(3), "Descripción 3"));
+        eventRepository.save(nuevoEvento("Conferencia Java", LocalDate.now().plusMonths(1), "Descripción 1"));
+        eventRepository.save(nuevoEvento("Workshop Spring", LocalDate.now().plusMonths(2), "Descripción 2"));
+        eventRepository.save(nuevoEvento("Conferencia Python", LocalDate.now().plusMonths(3), "Descripción 3"));
 
         // Act
         List<Event> result = eventRepository.findByNombreContaining("Conferencia");
@@ -49,7 +68,7 @@ class EventRepositoryTest {
     void findAll_WithPageable_ReturnsCorrectPageSizeAndMetadata() {
         // Arrange
         for (int i = 1; i <= 12; i++) {
-            eventRepository.save(new Event(null, "Evento " + i, LocalDate.now().plusMonths(1), "Desc " + i));
+            eventRepository.save(nuevoEvento("Evento " + i, LocalDate.now().plusMonths(1), "Desc " + i));
         }
 
         // Act

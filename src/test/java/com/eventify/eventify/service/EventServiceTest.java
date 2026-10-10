@@ -1,8 +1,12 @@
 package com.eventify.eventify.service;
 
+import com.eventify.eventify.dto.EventFilter;
+import com.eventify.eventify.dto.EventSummaryDTO;
 import com.eventify.eventify.exception.InvalidDataException;
 import com.eventify.eventify.exception.ResourceNotFoundException;
+import com.eventify.eventify.model.Category;
 import com.eventify.eventify.model.Event;
+import com.eventify.eventify.model.Venue;
 import com.eventify.eventify.repository.EventRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -10,14 +14,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.SliceImpl;
 
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -28,20 +33,31 @@ class EventServiceTest {
     @Mock
     private EventRepository eventRepository;
 
+    @Mock
+    private VenueService venueService;
+
+    @Mock
+    private CategoryService categoryService;
+
     @InjectMocks
     private EventService eventService;
 
     private Event validEvent;
 
+    private Venue venue;
+
     @BeforeEach
     void setUp() {
         validEvent = new Event(null, "Conferencia Java", LocalDate.now().plusMonths(1), "Charla técnica de backend");
+        venue = new Venue(1L, "Auditorio Principal", "Calle 50 #20-10", "Bogotá", 300);
+        validEvent.setVenue(venue);
     }
 
     @Test
     void save_ValidEvent_ReturnsSavedEvent() {
         // Arrange (Preparar)
         Event savedMock = new Event(1L, "Conferencia Java", LocalDate.now().plusMonths(1), "Charla técnica de backend");
+        when(venueService.findById(1L)).thenReturn(venue);
         when(eventRepository.save(validEvent)).thenReturn(savedMock);
 
         // Act (Actuar)
@@ -116,21 +132,31 @@ class EventServiceTest {
     }
 
     @Test
-    void findAll_WithPageable_ReturnsPageOfEvents() {
+    void buscar_WithFilters_ReturnsSliceOfSummaries() {
         // Arrange
-        List<Event> contenido = List.of(new Event(1L, "Evento 1", LocalDate.now().plusMonths(1), "Desc 1"));
+        EventFilter filtro = new EventFilter("bog", "rock", null, null, null);
         Pageable pageable = PageRequest.of(0, 5);
-        Page<Event> paginaMock = new PageImpl<>(contenido, pageable, 1);
-        when(eventRepository.findAll(pageable)).thenReturn(paginaMock);
+        List<EventSummaryDTO> contenido = List.of(new EventSummaryDTO(1L, "Concierto de ROCK", LocalDate.now().plusMonths(1), "Estadio", "Bogotá"));
+        Slice<EventSummaryDTO> sliceMock = new SliceImpl<>(contenido, pageable, false);
+        when(eventRepository.buscarResumen("bog", "rock", null, null, null, pageable)).thenReturn(sliceMock);
 
         // Act
-        Page<Event> result = eventService.findAll(pageable);
+        Slice<EventSummaryDTO> result = eventService.buscar(filtro, pageable);
 
         // Assert
-        assertNotNull(result);
-        assertEquals(1, result.getTotalElements());
         assertEquals(1, result.getContent().size());
-        verify(eventRepository, times(1)).findAll(pageable);
+        assertFalse(result.hasNext());
+        verify(eventRepository, times(1)).buscarResumen("bog", "rock", null, null, null, pageable);
+    }
+
+    @Test
+    void buscar_FechaDesdeAfterFechaHasta_ThrowsInvalidDataException() {
+        // Arrange
+        EventFilter filtro = new EventFilter(null, null, null, LocalDate.now().plusMonths(2), LocalDate.now().plusMonths(1));
+
+        // Act & Assert
+        assertThrows(InvalidDataException.class, () -> eventService.buscar(filtro, PageRequest.of(0, 5)));
+        verify(eventRepository, never()).buscarResumen(any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -162,7 +188,9 @@ class EventServiceTest {
         // Arrange
         Event existente = new Event(1L, "Nombre Viejo", LocalDate.now().plusMonths(1), "Descripción vieja");
         Event datosNuevos = new Event(null, "Nombre Nuevo", LocalDate.now().plusMonths(2), "Descripción nueva");
+        datosNuevos.setVenue(venue);
         when(eventRepository.findById(1L)).thenReturn(Optional.of(existente));
+        when(venueService.findById(1L)).thenReturn(venue);
         when(eventRepository.save(any(Event.class))).thenReturn(existente);
 
         // Act
@@ -172,6 +200,7 @@ class EventServiceTest {
         assertNotNull(result);
         assertEquals("Nombre Nuevo", result.getNombre());
         assertEquals(LocalDate.now().plusMonths(2), result.getFecha());
+        assertEquals("Auditorio Principal", result.getVenue().getNombre());
         verify(eventRepository, times(1)).save(existente);
     }
 
@@ -199,7 +228,7 @@ class EventServiceTest {
     }
 
     @Test
-    void delete_ExistingId_DeletesEvent() {
+    void delete_ExistingId_SoftDeletesEvent() {
         // Arrange
         Event existente = new Event(1L, "Conferencia Java", LocalDate.now().plusMonths(1), "Descripción");
         when(eventRepository.findById(1L)).thenReturn(Optional.of(existente));
@@ -208,7 +237,8 @@ class EventServiceTest {
         eventService.delete(1L);
 
         // Assert
-        verify(eventRepository, times(1)).delete(existente);
+        verify(eventRepository, times(1)).softDelete(1L);
+        verify(eventRepository, never()).delete(any());
     }
 
     @Test
@@ -218,7 +248,38 @@ class EventServiceTest {
 
         // Act & Assert
         assertThrows(ResourceNotFoundException.class, () -> eventService.delete(99L));
-        verify(eventRepository, never()).delete(any());
+        verify(eventRepository, never()).softDelete(any());
+    }
+
+    @Test
+    void save_WithoutVenue_ThrowsInvalidDataException() {
+        // Arrange
+        Event sinLugar = new Event(null, "Conferencia Java", LocalDate.now().plusMonths(1), "Descripción");
+
+        // Act & Assert
+        assertThrows(InvalidDataException.class, () -> eventService.save(sinLugar));
+        verify(eventRepository, never()).save(any());
+    }
+
+    @Test
+    void save_WithCategories_ResolvesRelationsAndForcesActive() {
+        // Arrange
+        Category conciertos = new Category(1L, "Conciertos", "Música en vivo");
+        Category rock = new Category(8L, "Rock", "Género rock");
+        validEvent.getCategorias().add(Category.conId(1L));
+        validEvent.getCategorias().add(Category.conId(8L));
+        validEvent.setActivo(false);
+        when(venueService.findById(1L)).thenReturn(venue);
+        when(categoryService.findAllByIds(Set.of(1L, 8L))).thenReturn(List.of(conciertos, rock));
+        when(eventRepository.save(validEvent)).thenReturn(validEvent);
+
+        // Act
+        Event result = eventService.save(validEvent);
+
+        // Assert
+        assertSame(venue, result.getVenue());
+        assertEquals(Set.of(conciertos, rock), result.getCategorias());
+        assertTrue(result.getActivo());
     }
 }
 

@@ -37,11 +37,43 @@
     </div>
 </header>
 
-<!-- Mensaje de confirmación enviado como flash attribute tras un redirect -->
-<div th:fragment="alerta" th:if="${mensaje}"
-     class="mb-6 px-5 py-3 rounded-2xl bg-green-50 border border-green-200 text-green-700 text-sm font-medium"
-     th:text="${mensaje}">
-    Operación realizada correctamente.
+<!-- Mensajes enviados como flash attribute tras un redirect: confirmación (mensaje) o error -->
+<th:block th:fragment="alerta">
+    <div th:if="${mensaje}"
+         class="mb-6 px-5 py-3 rounded-2xl bg-green-50 border border-green-200 text-green-700 text-sm font-medium"
+         th:text="${mensaje}">
+        Operación realizada correctamente.
+    </div>
+    <div th:if="${error}"
+         class="mb-6 px-5 py-3 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-sm font-medium"
+         th:text="${error}">
+        No se pudo completar la operación.
+    </div>
+</th:block>
+
+<!-- Navegación de un Slice: los botones se deshabilitan solos según hasPrevious()/hasNext() -->
+<div th:fragment="paginacion(pagina, urlAnterior, urlSiguiente)"
+     th:unless="${pagina.first and !pagina.hasNext()}"
+     class="flex items-center justify-center gap-3 mt-6">
+    <a th:if="${pagina.hasPrevious()}" th:href="${urlAnterior}"
+       class="px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-600 text-sm font-medium hover:bg-slate-100 transition-all duration-300">
+        ← Anterior
+    </a>
+    <span th:unless="${pagina.hasPrevious()}" aria-disabled="true"
+          class="px-4 py-2 rounded-xl bg-slate-100 border border-slate-200 text-slate-300 text-sm font-medium cursor-not-allowed">
+        ← Anterior
+    </span>
+    <span class="px-4 py-2 text-sm text-slate-500">
+        Página <span th:text="${pagina.number + 1}"></span>
+    </span>
+    <a th:if="${pagina.hasNext()}" th:href="${urlSiguiente}"
+       class="px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-600 text-sm font-medium hover:bg-slate-100 transition-all duration-300">
+        Siguiente →
+    </a>
+    <span th:unless="${pagina.hasNext()}" aria-disabled="true"
+          class="px-4 py-2 rounded-xl bg-slate-100 border border-slate-200 text-slate-300 text-sm font-medium cursor-not-allowed">
+        Siguiente →
+    </span>
 </div>
 
 </body>

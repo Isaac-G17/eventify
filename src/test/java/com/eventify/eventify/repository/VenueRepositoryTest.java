@@ -11,7 +11,8 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@DataJpaTest
+// Solo V1 y V2: el esquema real de Flyway pero sin el seed masivo de V3
+@DataJpaTest(properties = "spring.flyway.target=2")
 class VenueRepositoryTest {
 
     @Autowired
@@ -20,7 +21,7 @@ class VenueRepositoryTest {
     @Test
     void save_PersistsVenueWithGeneratedId() {
         // Arrange
-        Venue venue = new Venue(null, "Auditorio Principal", "Calle 50 #20-10", 300);
+        Venue venue = new Venue(null, "Auditorio Principal", "Calle 50 #20-10", "Bogotá", 300);
 
         // Act
         Venue saved = venueRepository.save(venue);
@@ -33,9 +34,9 @@ class VenueRepositoryTest {
     @Test
     void findByNombreContaining_ReturnsMatchingVenues() {
         // Arrange
-        venueRepository.save(new Venue(null, "Auditorio Central", "Calle 1", 100));
-        venueRepository.save(new Venue(null, "Sala de Juntas", "Calle 2", 20));
-        venueRepository.save(new Venue(null, "Auditorio Norte", "Calle 3", 200));
+        venueRepository.save(new Venue(null, "Auditorio Central", "Calle 1", "Bogotá", 100));
+        venueRepository.save(new Venue(null, "Sala de Juntas", "Calle 2", "Bogotá", 20));
+        venueRepository.save(new Venue(null, "Auditorio Norte", "Calle 3", "Bogotá", 200));
 
         // Act
         List<Venue> result = venueRepository.findByNombreContaining("Auditorio");
@@ -48,7 +49,7 @@ class VenueRepositoryTest {
     void findAll_WithPageable_ReturnsCorrectPageSizeAndMetadata() {
         // Arrange
         for (int i = 1; i <= 12; i++) {
-            venueRepository.save(new Venue(null, "Lugar " + i, "Dirección " + i, 50));
+            venueRepository.save(new Venue(null, "Lugar " + i, "Dirección " + i, "Bogotá", 50));
         }
 
         // Act

@@ -64,9 +64,10 @@ public class VenueController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @Operation(summary = "Eliminar un lugar", description = "Elimina el lugar indicado; retorna 404 si no existe, 204 si se elimina correctamente")
+    @Operation(summary = "Eliminar un lugar", description = "Elimina el lugar indicado; retorna 404 si no existe, 400 si tiene eventos asociados (incluidos los eliminados lógicamente, que se conservan por trazabilidad), 204 si se elimina correctamente")
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Lugar eliminado correctamente"),
+            @ApiResponse(responseCode = "400", description = "El lugar tiene eventos asociados"),
             @ApiResponse(responseCode = "404", description = "No existe un lugar con ese ID")
     })
     public void delete(@PathVariable Long id){

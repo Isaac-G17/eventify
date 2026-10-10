@@ -35,13 +35,13 @@ class VenueServiceTest {
 
     @BeforeEach
     void setUp() {
-        validVenue = new Venue(null, "Auditorio Principal", "Calle 50 #20-10", 300);
+        validVenue = new Venue(null, "Auditorio Principal", "Calle 50 #20-10", "Bogotá", 300);
     }
 
     @Test
     void save_ValidVenue_ReturnsSavedVenue() {
         // Arrange (Preparar)
-        Venue savedMock = new Venue(1L, "Auditorio Principal", "Calle 50 #20-10", 300);
+        Venue savedMock = new Venue(1L, "Auditorio Principal", "Calle 50 #20-10", "Bogotá", 300);
         when(venueRepository.save(validVenue)).thenReturn(savedMock);
 
         // Act (Actuar)
@@ -57,7 +57,7 @@ class VenueServiceTest {
     @Test
     void save_EmptyName_ThrowsInvalidDataException() {
         // Arrange (Preparar)
-        Venue invalidVenue = new Venue(null, "", "Calle 50 #20-10", 300);
+        Venue invalidVenue = new Venue(null, "", "Calle 50 #20-10", "Bogotá", 300);
 
         // Act & Assert (Actuar y Verificar)
         assertThrows(InvalidDataException.class, () -> venueService.save(invalidVenue));
@@ -67,7 +67,7 @@ class VenueServiceTest {
     @Test
     void save_NullName_ThrowsInvalidDataException() {
         // Arrange (Preparar)
-        Venue invalidVenue = new Venue(null, null, "Calle 50 #20-10", 300);
+        Venue invalidVenue = new Venue(null, null, "Calle 50 #20-10", "Bogotá", 300);
 
         // Act & Assert (Actuar y Verificar)
         assertThrows(InvalidDataException.class, () -> venueService.save(invalidVenue));
@@ -77,7 +77,7 @@ class VenueServiceTest {
     @Test
     void save_EmptyDireccion_ThrowsInvalidDataException() {
         // Arrange (Preparar)
-        Venue invalidVenue = new Venue(null, "Auditorio Principal", "   ", 300);
+        Venue invalidVenue = new Venue(null, "Auditorio Principal", "   ", "Bogotá", 300);
 
         // Act & Assert (Actuar y Verificar)
         assertThrows(InvalidDataException.class, () -> venueService.save(invalidVenue));
@@ -87,7 +87,7 @@ class VenueServiceTest {
     @Test
     void save_NullCapacidad_ThrowsInvalidDataException() {
         // Arrange (Preparar)
-        Venue invalidVenue = new Venue(null, "Auditorio Principal", "Calle 50 #20-10", null);
+        Venue invalidVenue = new Venue(null, "Auditorio Principal", "Calle 50 #20-10", "Bogotá", null);
 
         // Act & Assert (Actuar y Verificar)
         assertThrows(InvalidDataException.class, () -> venueService.save(invalidVenue));
@@ -97,7 +97,7 @@ class VenueServiceTest {
     @Test
     void save_NegativeCapacidad_ThrowsInvalidDataException() {
         // Arrange (Preparar)
-        Venue invalidVenue = new Venue(null, "Auditorio Principal", "Calle 50 #20-10", -5);
+        Venue invalidVenue = new Venue(null, "Auditorio Principal", "Calle 50 #20-10", "Bogotá", -5);
 
         // Act & Assert (Actuar y Verificar)
         assertThrows(InvalidDataException.class, () -> venueService.save(invalidVenue));
@@ -107,7 +107,7 @@ class VenueServiceTest {
     @Test
     void save_ZeroCapacidad_ThrowsInvalidDataException() {
         // Arrange (Preparar)
-        Venue invalidVenue = new Venue(null, "Auditorio Principal", "Calle 50 #20-10", 0);
+        Venue invalidVenue = new Venue(null, "Auditorio Principal", "Calle 50 #20-10", "Bogotá", 0);
 
         // Act & Assert (Actuar y Verificar)
         assertThrows(InvalidDataException.class, () -> venueService.save(invalidVenue));
@@ -117,7 +117,7 @@ class VenueServiceTest {
     @Test
     void findAll_WithPageable_ReturnsPageOfVenues() {
         // Arrange
-        List<Venue> contenido = List.of(new Venue(1L, "Lugar A", "Dirección A", 100));
+        List<Venue> contenido = List.of(new Venue(1L, "Lugar A", "Dirección A", "Bogotá", 100));
         Pageable pageable = PageRequest.of(0, 5);
         Page<Venue> paginaMock = new PageImpl<>(contenido, pageable, 1);
         when(venueRepository.findAll(pageable)).thenReturn(paginaMock);
@@ -136,7 +136,7 @@ class VenueServiceTest {
     @Test
     void findById_ExistingId_ReturnsVenue() {
         // Arrange
-        Venue existente = new Venue(1L, "Auditorio Principal", "Calle 50 #20-10", 300);
+        Venue existente = new Venue(1L, "Auditorio Principal", "Calle 50 #20-10", "Bogotá", 300);
         when(venueRepository.findById(1L)).thenReturn(Optional.of(existente));
 
         // Act
@@ -160,8 +160,8 @@ class VenueServiceTest {
     @Test
     void update_ValidData_ReturnsUpdatedVenue() {
         // Arrange
-        Venue existente = new Venue(1L, "Nombre Viejo", "Dirección Vieja", 100);
-        Venue datosNuevos = new Venue(null, "Nombre Nuevo", "Dirección Nueva", 200);
+        Venue existente = new Venue(1L, "Nombre Viejo", "Dirección Vieja", "Bogotá", 100);
+        Venue datosNuevos = new Venue(null, "Nombre Nuevo", "Dirección Nueva", "Bogotá", 200);
         when(venueRepository.findById(1L)).thenReturn(Optional.of(existente));
         when(venueRepository.save(any(Venue.class))).thenReturn(existente);
 
@@ -178,7 +178,7 @@ class VenueServiceTest {
     @Test
     void update_NonExistingId_ThrowsResourceNotFoundException() {
         // Arrange
-        Venue datosNuevos = new Venue(null, "Nombre Nuevo", "Dirección Nueva", 200);
+        Venue datosNuevos = new Venue(null, "Nombre Nuevo", "Dirección Nueva", "Bogotá", 200);
         when(venueRepository.findById(99L)).thenReturn(Optional.empty());
 
         // Act & Assert
@@ -189,8 +189,8 @@ class VenueServiceTest {
     @Test
     void update_InvalidData_ThrowsInvalidDataException() {
         // Arrange
-        Venue existente = new Venue(1L, "Nombre Viejo", "Dirección Vieja", 100);
-        Venue datosInvalidos = new Venue(null, "Nombre Nuevo", "Dirección Nueva", -10);
+        Venue existente = new Venue(1L, "Nombre Viejo", "Dirección Vieja", "Bogotá", 100);
+        Venue datosInvalidos = new Venue(null, "Nombre Nuevo", "Dirección Nueva", "Bogotá", -10);
         when(venueRepository.findById(1L)).thenReturn(Optional.of(existente));
 
         // Act & Assert
@@ -201,7 +201,7 @@ class VenueServiceTest {
     @Test
     void delete_ExistingId_DeletesVenue() {
         // Arrange
-        Venue existente = new Venue(1L, "Auditorio Principal", "Calle 50 #20-10", 300);
+        Venue existente = new Venue(1L, "Auditorio Principal", "Calle 50 #20-10", "Bogotá", 300);
         when(venueRepository.findById(1L)).thenReturn(Optional.of(existente));
 
         // Act
@@ -218,6 +218,28 @@ class VenueServiceTest {
 
         // Act & Assert
         assertThrows(ResourceNotFoundException.class, () -> venueService.delete(99L));
+        verify(venueRepository, never()).delete(any());
+    }
+
+    @Test
+    void save_EmptyCiudad_ThrowsInvalidDataException() {
+        // Arrange
+        Venue invalidVenue = new Venue(null, "Auditorio Principal", "Calle 50 #20-10", "  ", 300);
+
+        // Act & Assert
+        assertThrows(InvalidDataException.class, () -> venueService.save(invalidVenue));
+        verify(venueRepository, never()).save(any());
+    }
+
+    @Test
+    void delete_VenueWithEvents_ThrowsInvalidDataException() {
+        // Arrange
+        Venue existente = new Venue(1L, "Auditorio Principal", "Calle 50 #20-10", "Bogotá", 300);
+        when(venueRepository.findById(1L)).thenReturn(Optional.of(existente));
+        when(venueRepository.contarEventosAsociados(1L)).thenReturn(3L);
+
+        // Act & Assert
+        assertThrows(InvalidDataException.class, () -> venueService.delete(1L));
         verify(venueRepository, never()).delete(any());
     }
 }

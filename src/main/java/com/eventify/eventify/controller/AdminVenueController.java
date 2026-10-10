@@ -1,5 +1,6 @@
 package com.eventify.eventify.controller;
 
+import com.eventify.eventify.exception.InvalidDataException;
 import com.eventify.eventify.model.Venue;
 import com.eventify.eventify.service.VenueService;
 import org.springframework.data.domain.Pageable;
@@ -53,8 +54,12 @@ public class AdminVenueController {
 
     @PostMapping("/{id}/eliminar")
     public String eliminar(@PathVariable Long id, RedirectAttributes redirectAttributes) {
-        venueService.delete(id);
-        redirectAttributes.addFlashAttribute("mensaje", "Lugar eliminado correctamente.");
+        try {
+            venueService.delete(id);
+            redirectAttributes.addFlashAttribute("mensaje", "Lugar eliminado correctamente.");
+        } catch (InvalidDataException e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+        }
         return "redirect:/admin/venues";
     }
 }

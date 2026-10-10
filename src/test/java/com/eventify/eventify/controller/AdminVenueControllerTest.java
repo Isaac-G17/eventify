@@ -1,5 +1,6 @@
 package com.eventify.eventify.controller;
 
+import com.eventify.eventify.exception.InvalidDataException;
 import com.eventify.eventify.model.Venue;
 import com.eventify.eventify.service.VenueService;
 import org.junit.jupiter.api.Test;
@@ -13,6 +14,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -31,7 +33,7 @@ class AdminVenueControllerTest {
     void listar_ConVenues_RetornaVistaConModelo() throws Exception {
         // Arrange
         List<Venue> venues = List.of(
-                new Venue(1L, "Auditorio Principal", "Calle 50 #20-10", 300)
+                new Venue(1L, "Auditorio Principal", "Calle 50 #20-10", "Bogotá", 300)
         );
         Page<Venue> pagina = new PageImpl<>(venues);
         when(venueService.findAll(any())).thenReturn(pagina);
@@ -75,5 +77,16 @@ class AdminVenueControllerTest {
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/admin/venues"))
                 .andExpect(flash().attribute("mensaje", "Lugar registrado correctamente."));
+    }
+
+    @Test
+    void eliminar_VenueConEventos_RedirigeConMensajeDeError() throws Exception {
+        doThrow(new InvalidDataException("No se puede eliminar el lugar porque tiene eventos asociados"))
+                .when(venueService).delete(1L);
+
+        mockMvc.perform(post("/admin/venues/1/eliminar"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/admin/venues"))
+                .andExpect(flash().attribute("error", "No se puede eliminar el lugar porque tiene eventos asociados"));
     }
 }

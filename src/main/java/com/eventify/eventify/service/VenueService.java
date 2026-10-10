@@ -6,7 +6,10 @@ import com.eventify.eventify.model.Venue;
 import com.eventify.eventify.repository.VenueRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 
 @Service
@@ -33,6 +36,7 @@ public class VenueService {
 
         venueExistente.setNombre(datosActualizados.getNombre());
         venueExistente.setDireccion(datosActualizados.getDireccion());
+        venueExistente.setCiudad(datosActualizados.getCiudad());
         venueExistente.setCapacidad(datosActualizados.getCapacidad());
 
         return venueRepository.save(venueExistente);
@@ -40,11 +44,18 @@ public class VenueService {
 
     public void delete(Long id){
         Venue venue = findById(id);
+        if(venueRepository.contarEventosAsociados(id) > 0){
+            throw new InvalidDataException("No se puede eliminar el lugar porque tiene eventos asociados");
+        }
         venueRepository.delete(venue);
     }
 
     public Page<Venue> findAll(Pageable pageable){
         return venueRepository.findAll(pageable);
+    }
+
+    public List<Venue> findAllOrdenados(){
+        return venueRepository.findAll(Sort.by("nombre"));
     }
 
     private void validate(Venue venue){
@@ -53,6 +64,9 @@ public class VenueService {
         }
         if(venue.getDireccion() == null || venue.getDireccion().trim().isEmpty()){
             throw new InvalidDataException("La dirección no puede estar vacía");
+        }
+        if(venue.getCiudad() == null || venue.getCiudad().trim().isEmpty()){
+            throw new InvalidDataException("La ciudad no puede estar vacía");
         }
         if(venue.getCapacidad() == null){
             throw new InvalidDataException("La capacidad es obligatoria");

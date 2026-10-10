@@ -29,6 +29,10 @@ public class Venue {
     @Column(nullable = false, length = 250)
     private String direccion;
 
+    @NotBlank(message = "La ciudad no puede estar vacía")
+    @Column(nullable = false, length = 100)
+    private String ciudad;
+
     @NotNull(message = "La capacidad es obligatoria")
     @Positive(message = "La capacidad debe ser mayor que cero")
     @Column(nullable = false)
